@@ -45,11 +45,12 @@ Sağ üstteki **Çıkış** düğmesi:
 
 ## Sorun mu var?
 
-| Belirti | Olası neden |
+| Belirti | Önce deneyin |
 |---|---|
-| "Giriş Yap" → boş sayfa veya hata | Yetkim IdP geçici olarak erişilemiyor olabilir |
-| Giriş başarılı ama "yetkisiz" gözüküyorsunuz | Kurumunuz UlakPDF'e attribute release etmemiş olabilir; sistem yöneticisine bildirin |
-| "Oturum açıldı" ama araçlara erişim yok | Tarayıcı çerezleri engelli; çerezlere izin verin |
+| "Giriş Yap" → boş sayfa veya hata | Birkaç dakika sonra tekrar deneyin; Yetkim IdP geçici olarak erişilemiyor olabilir |
+| Kurum seçim ekranında kurumunuz yok | Kurumunuz Yetkim üyesi olmayabilir; bilgi işlem birimine danışın |
+| Giriş başarılı ama "yetkisiz" yazısı | Kurumunuz UlakPDF'e attribute release etmemiş; sistem yöneticisine bildirin |
+| "Oturum açıldı" ama araçlara erişim yok | Tarayıcı çerezleri engelli — çerezlere izin verin, tarayıcıyı yeniden başlatın |
+| Tarayıcı uyarı veriyor | Farklı bir tarayıcıda deneyin (Firefox, Chrome, Edge) |
 
-Daha ayrıntılı sorun giderme için [Sorun giderme](../bakim/sorun-giderme.md)
-sayfasına bakın.
+Sıkıntı sürerse kurumunuzun bilgi işlem destek hattına başvurun.

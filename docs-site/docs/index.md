@@ -1,40 +1,32 @@
 # UlakPDF
 
-Kurum kullanıcılarına Yetkim SSO ile korunan, **tarayıcıda çalışan** bir PDF
-araç seti.
+Tarayıcıda çalışan, kurum SSO'su ile korunan PDF araç seti.
 
-## Neden UlakPDF?
+## Nedir bu?
 
-- **Gizlilik**: Dosyalar sunucuya yüklenmez, tüm işlemler kullanıcının
-  tarayıcısında WebAssembly ile yapılır.
-- **Hafif**: Sunucu yalnızca statik içerik servis eder; CPU/RAM ihtiyacı
-  benzer araçların onda biri (Stirling-PDF gibi).
-- **Kurum SSO**: Erişim Yetkim federasyonu üzerinden Shibboleth SAML2 ile
-  korunur. Tek imza ile tüm araçlara erişim.
-- **Yönetici görünürlüğü**: Kim, hangi kurumdan, hangi araçları açıyor
-  — yöneticilere açık bir özet panel sunulur.
+UlakPDF, dosyalarınızı sunucuya yüklemeden çalışan bir PDF araç koleksiyonudur:
 
-## Hızlı yön
+- 80+ araç: birleştirme, bölme, dönüştürme, OCR, imzalama, form doldurma...
+- Tüm işlem **tarayıcıda** olur — dosyalarınız sunucuya gitmez
+- **Yetkim SSO** ile kurum hesabınız üzerinden tek imza giriş
+- Aydınlık/karanlık tema, Türkçe arayüz, ücretsiz
 
-| İhtiyacınız | Sayfa |
-|---|---|
-| İlk kez giriyorum, nasıl kullanılır? | [Kullanım kılavuzu](kullanim/giris.md) |
-| Sunucuya kuracağım | [Kurulum](kurulum/on-hazirlik.md) |
-| Yetkim entegrasyonu | [Yetkim IdP entegrasyonu](kurulum/yetkim.md) |
-| İstatistik / yönetim | [Yönetici paneli](kullanim/yonetici.md) |
-| Mimari nedir? | [Mimari](mimari.md) |
+## Nasıl başlarım?
 
-## Yapı
+1. **[Giriş ve Oturum →](kullanim/giris.md)** — Yetkim SSO ile nasıl girilir
+2. **[Arayüz Turu →](kullanim/arayuz.md)** — Üst çubuk, tema, çıkış
+3. **[PDF Araçları →](kullanim/araclar.md)** — Hangi araçlar var, ne yaparlar
 
-```mermaid
-flowchart LR
-    U[Kullanıcı] -->|HTTPS| H[Host nginx + TLS]
-    H -->|HTTP loopback| N[nginx-shib SP]
-    N -->|SAML2| Y[Yetkim IdP]
-    N -->|statik| B[BentoPDF<br/>WASM araçlar]
-    N -->|JSON| S[stats-api<br/>SQLite]
-    N -->|statik| D[mkdocs<br/>/docs]
-```
+## Yönetici misiniz?
 
-Tüm PDF işleme **tarayıcıda** olur. Sunucu, kimlik doğrulaması ve içerik
-servisi dışında bir iş yapmaz.
+Eğer yöneticilik yetkisi tanımlanmış bir kullanıcıysanız `/stats/`
+adresinden kullanım istatistiklerini görebilirsiniz —
+**[Yönetici Paneli →](kullanim/yonetici.md)**.
+
+## Yardım & destek
+
+Bir sorun yaşıyorsanız:
+
+- Tarayıcı çerezlerinizin etkin olduğundan emin olun
+- Farklı bir tarayıcıda deneyin (Firefox, Chrome, Edge)
+- Sorun devam ederse: **[Yardım & Destek](kullanim/giris.md#sorun-mu-var)**

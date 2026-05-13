@@ -63,17 +63,7 @@ markdown_extensions:
 
 nav:
   - Genel Bakış: index.md
-  - Kullanım Kılavuzu:
-      - Giriş ve Oturum: kullanim/giris.md
-      - Arayüz: kullanim/arayuz.md
-      - PDF Araçları: kullanim/araclar.md
-      - Yönetici Paneli: kullanim/yonetici.md
-  - Kurulum:
-      - Ön Hazırlık: kurulum/on-hazirlik.md
-      - Kurulum Adımları: kurulum/kurulum.md
-      - Yetkim IdP Entegrasyonu: kurulum/yetkim.md
-  - İşletme & Bakım:
-      - Loglar ve İzleme: bakim/loglar.md
-      - Yedekleme: bakim/yedekleme.md
-      - Sorun Giderme: bakim/sorun-giderme.md
-  - Mimari: mimari.md
+  - Giriş ve Oturum: kullanim/giris.md
+  - Arayüz: kullanim/arayuz.md
+  - PDF Araçları: kullanim/araclar.md
+  - Yönetici Paneli: kullanim/yonetici.md
