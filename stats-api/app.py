@@ -117,7 +117,11 @@ def _ingest_line(c: sqlite3.Connection, line: str) -> None:
         rec = json.loads(line)
     except json.JSONDecodeError:
         return
-    eppn = (rec.get("eppn") or "").strip().lower() or None
+    # Identity fallback: some IdPs (e.g. kimlik.ulakbim.gov.tr in single-IdP
+    # mode) don't release eduPersonPrincipalName. Treat `mail` as the user
+    # identifier when `eppn` is empty. With Yetkim federation IdPs that DO
+    # release eppn, the fallback never fires and behavior is unchanged.
+    eppn = (rec.get("eppn") or rec.get("mail") or "").strip().lower() or None
     inst = _institution(eppn)
     ts = rec.get("ts") or ""
     day = ts[:10] if len(ts) >= 10 else ""
@@ -205,10 +209,15 @@ def _date_range(days: int) -> tuple[str, str]:
 # ---- Admin gate: every /api/* endpoint requires X-Remote-User ∈ ADMIN_EPPNS.
 #      X-Remote-User is set by nginx after Shibboleth auth — we trust it.
 
-def require_admin(x_remote_user: str | None = Header(default=None)) -> str:
-    user = (x_remote_user or "").strip().lower()
+def require_admin(
+    x_remote_user: str | None = Header(default=None),
+    x_remote_mail: str | None = Header(default=None),
+) -> str:
+    # Same fallback as the ingest loop: prefer eppn, fall back to mail for
+    # IdPs that don't release eduPersonPrincipalName.
+    user = (x_remote_user or x_remote_mail or "").strip().lower()
     if not user:
-        raise HTTPException(401, "Shibboleth session required (no X-Remote-User)")
+        raise HTTPException(401, "Shibboleth session required (no X-Remote-User / X-Remote-Mail)")
     if not ADMIN_EPPNS or user not in ADMIN_EPPNS:
         raise HTTPException(403, f"{user} is not an admin")
     return user
