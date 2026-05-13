@@ -3,24 +3,57 @@
 UlakPDF, Yetkim federasyonuna **Service Provider (SP)** olarak katılır.
 SAML2 protokolü Shibboleth SP üzerinden işlenir.
 
-## Akış
+## Yetkim canlı endpoint'leri
+
+Aşağıdaki değerler Yetkim portalinden doğrulanmıştır (Mayıs 2026):
+
+| Servis | URL |
+|---|---|
+| **Federasyon metadata** | `https://md.yetkim.org.tr/yetkim-metadata.xml` |
+| **Discovery Service (WAYF)** | `https://ds.yetkim.org.tr/` |
+| **Test ortamı** | `https://test.yetkim.org.tr` |
+| **F-Ticks log host** | `log.yetkim.org.tr:4513` (Yetkim+eduGAIN) veya `:4512` (sadece Yetkim) |
+
+Federasyon metadata XML imzalıdır; `validUntil` tipik olarak 10 gün,
+`cacheDuration` 5 saat. shibd bunu otomatik refresh eder.
+
+## İki mod
+
+UlakPDF SP'si iki şekilde çalışabilir:
+
+| Mod | Ne zaman | `.env` |
+|---|---|---|
+| **Federasyon (önerilen)** | Birden çok kurumdan kullanıcı kabul edilecek | `IDP_DISCOVERY_URL` set, `IDP_ENTITY_ID` boş |
+| **Tek-IdP** | Yalnızca tek bir kurumun kullanıcıları | `IDP_ENTITY_ID` set, `IDP_DISCOVERY_URL` boş |
+
+Mod, `.env`'deki `IDP_DISCOVERY_URL` değişkeniyle seçilir; entrypoint
+boot'ta `<SSO>` blogunu uygun şekilde render eder.
+
+## Federasyon-modu akışı
 
 ```mermaid
 sequenceDiagram
     participant U as Kullanıcı
     participant S as UlakPDF (SP)
-    participant Y as Yetkim IdP
+    participant W as Yetkim WAYF (DS)
+    participant Y as Kurum IdP'si
 
     U->>S: GET /pdf-merge-split
-    S->>U: 302 → Yetkim SSO
-    U->>Y: Kurum seçimi + parola
+    S->>U: 302 → Yetkim WAYF (entityID + return)
+    U->>W: WAYF kurum seçim formu
+    U->>W: "Bilkent Üniversitesi" seçer
+    W->>U: 302 geri SP'ye (entityID=Bilkent IdP)
+    S->>U: 302 → Bilkent IdP'ye SAML AuthnRequest
+    U->>Y: Bilkent kullanıcı/parola
     Y->>U: SAML Response (POST)
     U->>S: POST /Shibboleth.sso/SAML2/POST
     S->>S: Oturum oluştur, attribute ekle
     S->>U: 302 → /pdf-merge-split (Set-Cookie _shibsession_*)
-    U->>S: GET /pdf-merge-split (artık çerezli)
-    S->>U: 200 OK (BentoPDF içerik)
 ```
+
+Federasyon-modunun avantajı: tek WAYF üzerinden tüm Yetkim üyesi
+kurumların kullanıcıları girebilir. SP yapılandırması her kurum için
+ayrı tutulmaz.
 
 ## SP olarak Yetkim'e kayıt
 

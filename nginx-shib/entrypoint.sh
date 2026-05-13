@@ -25,14 +25,27 @@ if [ -d "$SHIB_OVERLAY" ]; then
     cp -a "$SHIB_OVERLAY"/. "$SHIB_ETC"/
 fi
 
-# 3) Render env vars into shibboleth2.xml (envsubst with an allow-list so we
+# 3) Build the <SSO> block. If IDP_DISCOVERY_URL is set we run in federation
+#    mode (Shibboleth SAMLDS profile) — the user picks their home IdP at the
+#    discovery service, then SP issues a SAML2 AuthnRequest to that IdP.
+#    Otherwise we fall back to single-IdP mode pinning to IDP_ENTITY_ID.
+if [ -n "${IDP_DISCOVERY_URL:-}" ]; then
+    echo "[entrypoint] SSO mode: federation (Discovery Service @ $IDP_DISCOVERY_URL)"
+    SSO_BLOCK="<SSO discoveryProtocol=\"SAMLDS\" discoveryURL=\"${IDP_DISCOVERY_URL}\">SAML2</SSO>"
+else
+    echo "[entrypoint] SSO mode: single-IdP (entityID=${IDP_ENTITY_ID:-?})"
+    SSO_BLOCK="<SSO entityID=\"${IDP_ENTITY_ID:-}\">SAML2</SSO>"
+fi
+export SSO_BLOCK
+
+# 4) Render env vars into shibboleth2.xml (envsubst with an allow-list so we
 #    don't accidentally clobber other ${...} occurrences).
-SHIB_VARS='${SP_ENTITY_ID} ${SP_BASE_URL} ${SP_HOSTNAME} ${IDP_ENTITY_ID} ${IDP_METADATA_URL} ${SUPPORT_CONTACT}'
+SHIB_VARS='${SP_ENTITY_ID} ${SP_BASE_URL} ${SP_HOSTNAME} ${IDP_ENTITY_ID} ${IDP_METADATA_URL} ${IDP_DISCOVERY_URL} ${SUPPORT_CONTACT} ${SSO_BLOCK}'
 tmp=$(mktemp)
 envsubst "$SHIB_VARS" < "$SHIB_ETC/shibboleth2.xml" > "$tmp"
 mv "$tmp" "$SHIB_ETC/shibboleth2.xml"
 
-# 4) Generate SP keypairs on first boot.
+# 5) Generate SP keypairs on first boot.
 if [ ! -f "$SHIB_ETC/sp-signing-cert.pem" ] || [ ! -f "$SHIB_ETC/sp-signing-key.pem" ]; then
     echo "[entrypoint] Generating SP signing keypair..."
     shib-keygen -h "${SP_HOSTNAME:-localhost}" -y 5 -e "${SP_ENTITY_ID:-https://localhost/shibboleth}" \
@@ -45,7 +58,7 @@ if [ ! -f "$SHIB_ETC/sp-encrypt-cert.pem" ] || [ ! -f "$SHIB_ETC/sp-encrypt-key.
 fi
 chown -R _shibd:_shibd "$SHIB_ETC" "$SHIB_RUN" /var/log/shibboleth 2>/dev/null || true
 
-# 5) Wait for the IdP metadata endpoint BEFORE shibd starts — shibd needs
+# 6) Wait for the IdP metadata endpoint BEFORE shibd starts — shibd needs
 #    successful first metadata load or it exits with a fatal init error.
 if [ -n "${IDP_METADATA_URL:-}" ] && [ "${WAIT_FOR_IDP:-1}" = "1" ]; then
     echo "[entrypoint] Waiting for IdP metadata at $IDP_METADATA_URL ..."
@@ -58,11 +71,11 @@ if [ -n "${IDP_METADATA_URL:-}" ] && [ "${WAIT_FOR_IDP:-1}" = "1" ]; then
     done
 fi
 
-# 6) Validate config (informational; warnings are non-fatal).
+# 7) Validate config (informational; warnings are non-fatal).
 echo "[entrypoint] shibd -t (config check)..."
 shibd -t || echo "[entrypoint] shibd -t reported issues; continuing."
 
-# 7) Launch shibd in the foreground (-F) and background it from the script
+# 8) Launch shibd in the foreground (-F) and background it from the script
 #    so it stays our child and signals propagate. -f forces removal of any
 #    stale listener socket.
 echo "[entrypoint] Starting shibd..."
@@ -74,7 +87,7 @@ if ! kill -0 "$SHIBD_PID" 2>/dev/null; then
     exit 1
 fi
 
-# 8) Spawn the FCGI helpers as _shibd (they need to read /etc/shibboleth, which
+# 9) Spawn the FCGI helpers as _shibd (they need to read /etc/shibboleth, which
 #    is locked down to that user). Socket mode 0666 lets nginx (www-data)
 #    connect — safe inside the container's private namespace.
 #
@@ -104,6 +117,6 @@ spawn-fcgi -u _shibd -g _shibd \
     -s "$SHIB_RUN/shibresponder.sock" -M 0666 \
     -- /usr/lib/x86_64-linux-gnu/shibboleth/shibresponder
 
-# 9) Hand off PID 1 to nginx (foreground) so signals propagate cleanly.
+# 10) Hand off PID 1 to nginx (foreground) so signals propagate cleanly.
 echo "[entrypoint] Starting nginx..."
 exec nginx -g 'daemon off;'

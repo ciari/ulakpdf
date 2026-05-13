@@ -87,8 +87,11 @@ services:
       SP_HOSTNAME: "${SP_HOSTNAME}"
       SP_ENTITY_ID: "${SP_ENTITY_ID}"
       SP_BASE_URL: "${SP_BASE_URL}"
-      IDP_ENTITY_ID: "${IDP_ENTITY_ID}"
+      IDP_ENTITY_ID: "${IDP_ENTITY_ID:-}"
       IDP_METADATA_URL: "${IDP_METADATA_URL}"
+      # Set to your federation's Discovery Service URL to switch to federation
+      # mode (Yetkim WAYF). Leave empty to pin to a single IDP_ENTITY_ID.
+      IDP_DISCOVERY_URL: "${IDP_DISCOVERY_URL:-}"
       SUPPORT_CONTACT: "${SUPPORT_CONTACT}"
       # Don't block startup waiting for the IdP — production IdP is always up,
       # and a slow remote check would delay our container boot during incidents.

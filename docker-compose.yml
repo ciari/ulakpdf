@@ -132,6 +132,10 @@ services:
       # baseurlpath above). Metadata URL is the internal fetch endpoint.
       IDP_ENTITY_ID: "${IDP_ENTITY_ID:-http://localhost:8082/simplesaml/saml2/idp/metadata.php}"
       IDP_METADATA_URL: "${IDP_METADATA_URL:-http://test-idp:8080/simplesaml/saml2/idp/metadata.php}"
+      # Set in .env (e.g. https://ds.yetkim.org.tr/) to switch to federation
+      # mode locally — IDP_ENTITY_ID is then ignored and the user is sent to
+      # the discovery service to pick their home IdP.
+      IDP_DISCOVERY_URL: "${IDP_DISCOVERY_URL:-}"
       SUPPORT_CONTACT: "${SUPPORT_CONTACT:-admin@example.org}"
       WAIT_FOR_IDP: "1"
     volumes:

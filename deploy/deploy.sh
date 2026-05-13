@@ -15,13 +15,25 @@ fi
 
 # Minimal required-key check.
 missing=()
-for k in DOMAIN SP_BASE_URL SP_ENTITY_ID IDP_ENTITY_ID IDP_METADATA_URL ADMIN_EPPNS; do
+for k in DOMAIN SP_BASE_URL SP_ENTITY_ID IDP_METADATA_URL ADMIN_EPPNS; do
     if ! grep -qE "^${k}=" .env || grep -qE "^${k}=$" .env; then
         missing+=("$k")
     fi
 done
 if [ "${#missing[@]}" -ne 0 ]; then
     echo "[deploy] .env is missing values for: ${missing[*]}" >&2
+    exit 1
+fi
+
+# Either IDP_ENTITY_ID (single-IdP mode) OR IDP_DISCOVERY_URL (federation mode)
+# must be set — entrypoint picks the SSO style accordingly.
+has_entity=0
+has_discovery=0
+grep -qE '^IDP_ENTITY_ID=.+' .env       && has_entity=1
+grep -qE '^IDP_DISCOVERY_URL=.+' .env   && has_discovery=1
+if [ "$has_entity" -eq 0 ] && [ "$has_discovery" -eq 0 ]; then
+    echo "[deploy] .env must set either IDP_ENTITY_ID (single-IdP mode)" >&2
+    echo "          or IDP_DISCOVERY_URL (federation mode)." >&2
     exit 1
 fi
 

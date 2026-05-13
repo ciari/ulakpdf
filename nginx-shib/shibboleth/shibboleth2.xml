@@ -30,9 +30,11 @@
                   checkAddress="false" handlerURL="/Shibboleth.sso"
                   handlerSSL="false" cookieProps="http">
 
-            <SSO entityID="${IDP_ENTITY_ID}">
-                SAML2
-            </SSO>
+            <!-- entrypoint.sh renders this to either:
+                   federation mode: <SSO discoveryProtocol="SAMLDS" discoveryURL="...">SAML2</SSO>
+                   single-IdP mode: <SSO entityID="...">SAML2</SSO>
+                 depending on whether IDP_DISCOVERY_URL is set in env. -->
+            ${SSO_BLOCK}
 
             <Logout>SAML2 Local</Logout>
             <LogoutInitiator type="Admin" Location="/Logout/Admin" acl="127.0.0.1 ::1"/>
