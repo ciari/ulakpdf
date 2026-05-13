@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!--
+  Shibboleth SP config rendered by entrypoint.sh.
+  Placeholders (${...}) are substituted from the container env at boot.
+-->
+<SPConfig xmlns="urn:mace:shibboleth:3.0:native:sp:config"
+          xmlns:conf="urn:mace:shibboleth:3.0:native:sp:config"
+          clockSkew="180">
+
+    <OutOfProcess tranLogFormat="%u|%s|%IDP|%i|%ac|%t|%attr|%n|%b|%E|%S|%SS|%L|%UA|%a"/>
+
+    <!-- A minimal RequestMap that protects the entire site. Without this, the
+         SP's default is "let anonymous traffic through, attach attributes only
+         if a session happens to exist" — which would defeat the whole point. -->
+    <RequestMapper type="Native">
+        <RequestMap authType="shibboleth" requireSession="true">
+            <Host name="${SP_HOSTNAME}"/>
+            <Host name="localhost"/>
+        </RequestMap>
+    </RequestMapper>
+
+    <ApplicationDefaults entityID="${SP_ENTITY_ID}"
+                         REMOTE_USER="eppn subject-id pairwise-id persistent-id email"
+                         cipherSuites="DEFAULT:!EXP:!LOW:!aNULL:!eNULL:!DES:!IDEA:!SEED:!RC4:!3DES:!kRSA:!SSLv2:!SSLv3:!TLSv1:!TLSv1.1">
+
+        <!-- Cookie + session settings; the SP issues its own session cookie
+             after a successful SAML handshake. handlerURL is path-relative so
+             it works behind any virtual host nginx fronts. -->
+        <Sessions lifetime="28800" timeout="3600" relayState="ss:mem"
+                  checkAddress="false" handlerURL="/Shibboleth.sso"
+                  handlerSSL="false" cookieProps="http">
+
+            <SSO entityID="${IDP_ENTITY_ID}">
+                SAML2
+            </SSO>
+
+            <Logout>SAML2 Local</Logout>
+            <LogoutInitiator type="Admin" Location="/Logout/Admin" acl="127.0.0.1 ::1"/>
+            <Handler type="MetadataGenerator" Location="/Metadata" signing="false"/>
+            <Handler type="Status" Location="/Status" acl="127.0.0.1 ::1 172.16.0.0/12"/>
+            <Handler type="Session" Location="/Session" showAttributeValues="true"/>
+            <Handler type="DiscoveryFeed" Location="/DiscoFeed"/>
+        </Sessions>
+
+        <Errors supportContact="${SUPPORT_CONTACT}"
+                helpLocation="/about.html"
+                styleSheet="/shibboleth-sp/main.css"/>
+
+        <!-- IdP metadata is fetched directly from the IdP. For prod, prefer a
+             federation aggregate signed with a known cert (add MetadataFilter
+             type="Signature" certificate="federation-cert.pem"). -->
+        <!-- For production, add MetadataFilter type="Signature" with a known
+             federation signing cert, plus RequireValidUntil. The test IdP
+             ships unsigned metadata without validUntil so we omit both. -->
+        <MetadataProvider type="XML" url="${IDP_METADATA_URL}"
+                          backingFilePath="idp-metadata.xml"
+                          maxRefreshDelay="7200"/>
+
+        <AttributeExtractor type="XML" validate="true" reloadChanges="false"
+                            path="attribute-map.xml"/>
+        <AttributeResolver type="Query" subjectMatch="true"/>
+        <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
+
+        <CredentialResolver type="File" use="signing"
+                            key="sp-signing-key.pem" certificate="sp-signing-cert.pem"/>
+        <CredentialResolver type="File" use="encryption"
+                            key="sp-encrypt-key.pem" certificate="sp-encrypt-cert.pem"/>
+    </ApplicationDefaults>
+
+    <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
+    <ProtocolProvider type="XML" validate="true" reloadChanges="false" path="protocols.xml"/>
+</SPConfig>

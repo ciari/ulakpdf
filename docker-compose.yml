@@ -1,0 +1,155 @@
+# BentoPDF behind a Shibboleth-protected nginx.
+#
+# Topology:
+#   browser ──▶ nginx-shib :8081 ──▶ bentopdf :8080  (static + WASM, no backend)
+#                    │
+#                    └─ FCGI ─▶ shibd ◀── SAML ──▶ test-idp :8082
+#
+# BentoPDF has no user system — files are processed entirely in the browser
+# via WASM. Shibboleth here is purely an access gate ("only authenticated
+# federation users can reach the tools"); there's nothing to log into inside
+# the app itself, so no OIDC bridge is needed.
+#
+# Quick test users (defined in idp-config/authsources.php):
+#   user1 / user1pass     (faculty, eppn user1@stirling.local)
+#   user2 / user2pass     (student, eppn user2@stirling.local)
+
+services:
+  bentopdf:
+    # Built locally from ./bentopdf so we can pass VITE_* branding vars at
+    # build time. (Vite inlines them into the JS bundle; passing them as
+    # runtime container env has no effect.)
+    build:
+      context: ./bentopdf
+      args:
+        SIMPLE_MODE: "true"
+        VITE_BRAND_NAME: "${VITE_BRAND_NAME:-BentoPDF}"
+        VITE_FOOTER_TEXT: "${VITE_FOOTER_TEXT:-}"
+    image: spdf-bentopdf:branded
+    container_name: bentopdf
+    restart: unless-stopped
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks:
+      - spdf
+
+  docs:
+    # mkdocs-material site, built once and served by alpine nginx.
+    build:
+      context: ./docs-site
+    image: spdf-docs
+    container_name: spdf-docs
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - spdf
+
+  test-idp:
+    # SimpleSAMLphp pre-packaged as a SAML IdP. Useful for local dev only.
+    image: kristophjunge/test-saml-idp:1.15
+    container_name: spdf-test-idp
+    restart: unless-stopped
+    ports:
+      - "${IDP_PORT:-8082}:8080"
+    environment:
+      SIMPLESAMLPHP_SP_ENTITY_ID: "${SP_ENTITY_ID:-https://localhost:8081/shibboleth}"
+      SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE: "${SP_BASE_URL:-http://localhost:8081}/Shibboleth.sso/SAML2/POST"
+      SIMPLESAMLPHP_SP_SINGLE_LOGOUT_SERVICE: "${SP_BASE_URL:-http://localhost:8081}/Shibboleth.sso/SLO/POST"
+      SIMPLESAMLPHP_ADMIN_PASSWORD: "${IDP_ADMIN_PASSWORD:-changeme}"
+      SIMPLESAMLPHP_SECRET_SALT: "${IDP_SECRET_SALT:-please-change-me-please}"
+      # Pin the IdP's baseurlpath so the metadata's entityID is stable across
+      # browser (localhost:8082) and shibd (test-idp:8080) callers.
+      SIMPLESAMLPHP_BASEURLPATH: "${SP_BASE_URL_PUBLIC_IDP:-http://localhost:8082/simplesaml/}"
+    volumes:
+      - ./idp-config/authsources.php:/var/www/simplesamlphp/config/authsources.php:ro
+      - ./idp-config/config.php:/var/www/simplesamlphp/config/config.php:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/simplesaml/saml2/idp/metadata.php >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+    networks:
+      - spdf
+
+  stats-api:
+    build:
+      context: ./stats-api
+    container_name: spdf-stats-api
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      ADMIN_EPPNS: "${ADMIN_EPPNS:-user1@stirling.local}"
+    volumes:
+      - nginx-logs:/logs:ro
+      - stats-db:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    networks:
+      - spdf
+
+  nginx-shib:
+    build:
+      context: ./nginx-shib
+    container_name: spdf-nginx-shib
+    restart: unless-stopped
+    depends_on:
+      test-idp:
+        condition: service_healthy
+      stats-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null -w '%{http_code}' http://localhost/Shibboleth.sso/Metadata | grep -q 200"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    ports:
+      - "${HTTP_PORT:-8081}:80"
+    environment:
+      SP_HOSTNAME: "${SP_HOSTNAME:-localhost}"
+      SP_ENTITY_ID: "${SP_ENTITY_ID:-https://localhost:8081/shibboleth}"
+      SP_BASE_URL: "${SP_BASE_URL:-http://localhost:8081}"
+      # Entity ID must match what the IdP actually issues (controlled by its
+      # baseurlpath above). Metadata URL is the internal fetch endpoint.
+      IDP_ENTITY_ID: "${IDP_ENTITY_ID:-http://localhost:8082/simplesaml/saml2/idp/metadata.php}"
+      IDP_METADATA_URL: "${IDP_METADATA_URL:-http://test-idp:8080/simplesaml/saml2/idp/metadata.php}"
+      SUPPORT_CONTACT: "${SUPPORT_CONTACT:-admin@example.org}"
+      WAIT_FOR_IDP: "1"
+    volumes:
+      - shib-state:/etc/shibboleth
+      # Shared with stats-api so it can tail the JSON access log.
+      - nginx-logs:/var/log/nginx
+      # Static admin dashboard, served from /stats/ in nginx.
+      - ./stats-admin:/etc/nginx/stats-admin:ro
+      # Public landing page shown to anonymous visitors.
+      - ./landing:/etc/nginx/landing:ro
+    networks:
+      - spdf
+
+networks:
+  spdf:
+    driver: bridge
+
+volumes:
+  shib-state:
+  nginx-logs:
+  stats-db:

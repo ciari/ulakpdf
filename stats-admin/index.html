@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>UlakPDF — Yönetici İstatistikleri</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --panel-2: #283549;
+      --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+      --good: #34d399; --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+    header { background: var(--panel); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0b1220; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    header .me { color: var(--muted); font-size: 12px; }
+    header .me a { color: var(--accent); margin-left: 12px; }
+    main { max-width: 1300px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .card { background: var(--panel); border-radius: 10px; padding: 16px; min-height: 0; }
+    .card h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .kpi { font-size: 32px; font-weight: 700; line-height: 1.1; }
+    .kpi .sub { font-size: 12px; color: var(--muted); display: block; margin-top: 4px; font-weight: 400; }
+    .col-3  { grid-column: span 3; }
+    .col-4  { grid-column: span 4; }
+    .col-6  { grid-column: span 6; }
+    .col-8  { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+    @media (max-width: 900px) {
+      .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; }
+    }
+    select, button { background: var(--panel-2); color: var(--text); border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+    button { cursor: pointer; }
+    button:hover { background: #334155; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #0b1220; }
+    th { color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    tbody tr:hover { background: var(--panel-2); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: var(--panel-2); }
+    .pill.ok    { background: rgba(52,211,153,0.15); color: var(--good); }
+    .pill.warn  { background: rgba(251,191,36,0.15); color: var(--warn); }
+    .err { color: #f87171; padding: 12px; }
+    canvas { max-height: 280px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>UlakPDF — Yönetici İstatistikleri</h1>
+  <div class="me">
+    <span id="who">…</span>
+    <label style="margin-left:16px">
+      Aralık:
+      <select id="days">
+        <option value="1">Bugün</option>
+        <option value="7">7 gün</option>
+        <option value="30" selected>30 gün</option>
+        <option value="90">90 gün</option>
+      </select>
+    </label>
+    <a href="/logout">Çıkış</a>
+  </div>
+</header>
+
+<main>
+  <div class="card col-3"><h2>Toplam İstek</h2><div class="kpi" id="kpi-hits">–</div></div>
+  <div class="card col-3"><h2>Tekil Kullanıcı</h2><div class="kpi" id="kpi-users">–</div></div>
+  <div class="card col-3"><h2>Kurum</h2><div class="kpi" id="kpi-inst">–</div></div>
+  <div class="card col-3"><h2>Kullanıcı-Gün</h2><div class="kpi" id="kpi-userdays">–<span class="sub">benzersiz (gün, kullanıcı) çiftleri</span></div></div>
+
+  <div class="card col-8"><h2>Zaman çizelgesi (günlük)</h2><canvas id="chart-timeline"></canvas></div>
+  <div class="card col-4"><h2>Kuruma göre kullanıcı</h2><canvas id="chart-institutions"></canvas></div>
+
+  <div class="card col-6"><h2>Açılan araç sayfaları</h2><canvas id="chart-tools"></canvas></div>
+  <div class="card col-6">
+    <h2>Son etkinlik</h2>
+    <div style="max-height: 280px; overflow:auto">
+      <table>
+        <thead><tr><th>Zaman</th><th>Kullanıcı</th><th>Kurum</th><th>URI</th><th>Durum</th></tr></thead>
+        <tbody id="recent-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card col-12">
+    <h2>Kuruma göre dağılım (detay)</h2>
+    <table>
+      <thead><tr><th>Kurum</th><th>Tekil kullanıcı</th><th>Toplam istek</th></tr></thead>
+      <tbody id="inst-tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+// All dynamic content gets put on the page via textContent, never innerHTML.
+// Log fields like `uri` are attacker-controllable (any URL the user can send
+// reaches the log) so HTML escaping has to be enforced at every render site.
+
+const el = (id) => document.getElementById(id);
+const fmt = (n) => (n ?? 0).toLocaleString('tr-TR');
+const palette = ['#38bdf8','#a78bfa','#34d399','#fbbf24','#f87171','#f472b6','#60a5fa','#fb923c','#22d3ee','#facc15'];
+
+const charts = {};
+function destroy(name) { if (charts[name]) { charts[name].destroy(); delete charts[name]; } }
+
+let forbiddenShown = false;
+function showForbidden(detail) {
+  if (forbiddenShown) return;
+  forbiddenShown = true;
+  document.querySelector('main').replaceChildren();
+  const div = document.createElement('div');
+  div.className = 'card col-12';
+  div.style.textAlign = 'center';
+  const h = document.createElement('h2');
+  h.textContent = 'Yetkisiz';
+  h.style.color = '#fbbf24';
+  const p = document.createElement('p');
+  p.textContent = `Bu sayfa yalnızca yöneticilere açık. Mevcut kullanıcı yönetici listesinde değil.`;
+  const small = document.createElement('p');
+  small.style.color = '#94a3b8';
+  small.textContent = detail || '';
+  const back = document.createElement('p');
+  const a = document.createElement('a');
+  a.href = '/'; a.textContent = '← Ana sayfaya dön'; a.style.color = '#38bdf8';
+  back.appendChild(a);
+  div.append(h, p, small, back);
+  document.querySelector('main').appendChild(div);
+}
+
+async function fetchJson(path) {
+  const r = await fetch(path, { credentials: 'same-origin' });
+  if (r.status === 403 || r.status === 401) {
+    let detail = '';
+    try { detail = (await r.json()).detail || ''; } catch (_) {}
+    showForbidden(detail);
+    throw new Error('forbidden');
+  }
+  if (!r.ok) throw new Error(`${path} → HTTP ${r.status}`);
+  return r.json();
+}
+
+function tdText(text, opts = {}) {
+  const td = document.createElement('td');
+  td.textContent = text == null ? '' : String(text);
+  if (opts.code) {
+    const c = document.createElement('code');
+    c.textContent = td.textContent;
+    td.textContent = '';
+    td.appendChild(c);
+  }
+  return td;
+}
+
+function tdPill(text, kind) {
+  const td = document.createElement('td');
+  const span = document.createElement('span');
+  span.className = `pill ${kind}`;
+  span.textContent = String(text);
+  td.appendChild(span);
+  return td;
+}
+
+function fillTable(tbody, rows, builder, emptyMsg = 'Veri yok.') {
+  tbody.replaceChildren();
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.style.color = '#94a3b8';
+    td.textContent = emptyMsg;
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  for (const r of rows) tbody.appendChild(builder(r));
+}
+
+function lineChart(ctx, labels, hits, users) {
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'İstek',     data: hits,  borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.15)', tension: 0.25, fill: true },
+      { label: 'Kullanıcı', data: users, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.15)', tension: 0.25, fill: true, yAxisID: 'y2' },
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#cbd5e1' } } },
+      scales: {
+        x:  { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+        y:  { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' }, beginAtZero: true, title: { text: 'İstek',     color: '#94a3b8', display: true } },
+        y2: { position: 'right', ticks: { color: '#94a3b8' }, grid: { drawOnChartArea: false }, beginAtZero: true, title: { text: 'Kullanıcı', color: '#94a3b8', display: true } },
+      },
+    },
+  });
+}
+
+function pie(ctx, labels, data) {
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: palette }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', boxWidth: 12 } } } },
+  });
+}
+
+function bars(ctx, labels, data) {
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'İstek', data, backgroundColor: '#38bdf8' }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' }, beginAtZero: true },
+        y: { ticks: { color: '#cbd5e1' }, grid: { color: '#1e293b' } },
+      } },
+  });
+}
+
+async function refresh() {
+  const days = el('days').value;
+
+  try {
+    const s = await fetchJson(`/stats/api/summary?days=${days}`);
+    el('kpi-hits').textContent  = fmt(s.hits);
+    el('kpi-users').textContent = fmt(s.unique_users);
+    el('kpi-inst').textContent  = fmt(s.institutions);
+    el('kpi-userdays').firstChild.textContent = fmt(s.user_days);
+  } catch (e) {
+    document.querySelectorAll('.kpi').forEach(k => k.firstChild.textContent = '!');
+    console.error(e);
+  }
+
+  const tl = await fetchJson(`/stats/api/timeline?days=${Math.min(days, 90)}`);
+  destroy('tl');
+  charts.tl = lineChart(el('chart-timeline'), tl.map(r => r.day), tl.map(r => r.hits), tl.map(r => r.users));
+
+  const inst = await fetchJson(`/stats/api/by-institution?days=${days}`);
+  destroy('inst');
+  if (inst.length) {
+    charts.inst = pie(el('chart-institutions'), inst.map(r => r.institution), inst.map(r => r.users));
+  }
+  fillTable(el('inst-tbody'), inst, (r) => {
+    const tr = document.createElement('tr');
+    tr.appendChild(tdText(r.institution));
+    tr.appendChild(tdText(fmt(r.users)));
+    tr.appendChild(tdText(fmt(r.hits)));
+    return tr;
+  });
+
+  const tools = await fetchJson(`/stats/api/by-tool?days=${days}`);
+  destroy('tools');
+  charts.tools = bars(el('chart-tools'),
+    tools.map(t => t.tool).slice(0, 10).reverse(),
+    tools.map(t => t.hits).slice(0, 10).reverse());
+
+  const rec = await fetchJson(`/stats/api/recent?limit=50`);
+  fillTable(el('recent-tbody'), rec, (r) => {
+    const tr = document.createElement('tr');
+    const t = (r.ts || '').replace('T', ' ').slice(0, 19);
+    tr.appendChild(tdText(t));
+    tr.appendChild(tdText(r.eppn || ''));
+    tr.appendChild(tdText(r.institution || ''));
+    tr.appendChild(tdText(r.uri || '', { code: true }));
+    tr.appendChild(tdPill(r.status, r.status >= 400 ? 'warn' : 'ok'));
+    return tr;
+  });
+}
+
+fetch('/stats/api/admins')
+  .then(r => r.json())
+  .then(d => { el('who').textContent = `Yönetici listesi: ${(d.admins || []).join(', ') || '(boş!)'}`; })
+  .catch(() => { el('who').textContent = 'Yönetici listesi alınamadı'; });
+
+el('days').addEventListener('change', refresh);
+refresh();
+setInterval(refresh, 30_000);
+</script>
+</body>
+</html>

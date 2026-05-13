@@ -1,0 +1,43 @@
+# Shibboleth-protect snippet: include this inside any location that needs
+# the user to be SAML-authenticated and the X-Remote-* headers injected.
+#
+# Must include the full proxy_set_header set: nginx does NOT merge
+# proxy_set_header from parent scopes if any are set in the child location.
+
+shib_request /shibauthorizer;
+shib_request_use_headers on;
+# Second arg MUST be a nginx variable reference (`$upstream_http_variable_X`),
+# not a literal string. Each Variable-X response header from shibauthorizer
+# is exposed as $upstream_http_variable_x (lowercase).
+shib_request_set $shib_eppn        $upstream_http_variable_eppn;
+shib_request_set $shib_mail        $upstream_http_variable_mail;
+shib_request_set $shib_displayname $upstream_http_variable_displayname;
+shib_request_set $shib_givenname   $upstream_http_variable_givenname;
+shib_request_set $shib_sn          $upstream_http_variable_sn;
+shib_request_set $shib_affiliation $upstream_http_variable_affiliation;
+shib_request_set $shib_session_id  $upstream_http_variable_shib_session_id;
+
+# Standard forwarded-* set. Host MUST include the port — Spring/Stirling uses
+# it (or X-Forwarded-Host + X-Forwarded-Port) to compute its OAuth2 redirect_uri.
+# `$host` strips the port; `$http_host` keeps it.
+proxy_set_header Host              $http_host;
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Host  $http_host;
+proxy_set_header X-Forwarded-Port  $public_port;
+
+# Strip any client-supplied auth headers — only the values shibd vouches for
+# should reach the backend.
+proxy_set_header Authorization     "";
+proxy_set_header X-Remote-User     $shib_eppn;
+proxy_set_header X-Remote-Mail     $shib_mail;
+proxy_set_header X-Remote-Name     $shib_displayname;
+proxy_set_header X-Remote-Given    $shib_givenname;
+proxy_set_header X-Remote-Surname  $shib_sn;
+proxy_set_header X-Remote-Affil    $shib_affiliation;
+proxy_set_header X-Shib-Session    $shib_session_id;
+
+# Tap every Shibboleth-authenticated request into the stats log. shib_*
+# variables are guaranteed to have values here (shib_request_set above).
+access_log /var/log/nginx/stats.log stats;

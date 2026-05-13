@@ -1,0 +1,22 @@
+# Local environment + state
+.env
+*.log
+
+# Local SP keypair (lives in named volume in prod)
+nginx-shib/shibboleth/sp-*.pem
+
+# Federation cert (local install only)
+nginx-shib/shibboleth/federation-cert.pem
+
+# Built docs (generated from docs-site/docs/)
+docs-site/site/
+
+# Test runner artifacts
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

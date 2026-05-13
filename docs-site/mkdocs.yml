@@ -1,0 +1,79 @@
+site_name: UlakPDF
+site_description: Tarayıcıda çalışan PDF araç seti — kurum SSO ile korunur
+site_author: Ulakbim Bulut
+
+# Served behind nginx at /docs/. Relative URLs work at any base path so we
+# don't need to bake the public hostname into the build.
+use_directory_urls: true
+strict: true
+
+theme:
+  name: material
+  language: tr
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Karanlık temaya geç
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-sunny
+        name: Aydınlık temaya geç
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    logo: material/file-document-multiple
+
+extra:
+  generator: false   # Hide "Made with Material for MkDocs" footer
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Genel Bakış: index.md
+  - Kullanım Kılavuzu:
+      - Giriş ve Oturum: kullanim/giris.md
+      - Arayüz: kullanim/arayuz.md
+      - PDF Araçları: kullanim/araclar.md
+      - Yönetici Paneli: kullanim/yonetici.md
+  - Kurulum:
+      - Ön Hazırlık: kurulum/on-hazirlik.md
+      - Kurulum Adımları: kurulum/kurulum.md
+      - Yetkim IdP Entegrasyonu: kurulum/yetkim.md
+  - İşletme & Bakım:
+      - Loglar ve İzleme: bakim/loglar.md
+      - Yedekleme: bakim/yedekleme.md
+      - Sorun Giderme: bakim/sorun-giderme.md
+  - Mimari: mimari.md

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>UlakPDF</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UlakPDF — Ulakbim Bulut PDF araçları">
+
+<script>
+  // Early paint: pick theme before first render so there's no flash.
+  // Same storage key as BentoPDF's theme-toggle so the choice carries over.
+  (function () {
+    try {
+      var t = localStorage.getItem('spdf-theme');
+      if (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) {
+        t = 'dark';
+      }
+      if (t === 'dark') document.documentElement.classList.add('theme-dark');
+    } catch (_) {}
+  })();
+</script>
+
+<style>
+  :root {
+    --ulak-blue:        #005CA9;
+    --ulak-blue-dark:   #004a8a;
+    --ulak-blue-soft:   #e0effa;
+    --bg-page:          #f8fafc;
+    --bg-panel:         #ffffff;
+    --text:             #0f172a;
+    --text-soft:        #475569;
+    --text-mute:        #64748b;
+    --border:           #e2e8f0;
+    --shadow:           0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --hover-bg:         rgba(148, 163, 184, 0.15);
+  }
+
+  /* Dark mode — overrides only the variables. Everything else inherits. */
+  :root.theme-dark {
+    --ulak-blue:        #4d9be0;
+    --ulak-blue-dark:   #2b7ec7;
+    --ulak-blue-soft:   #1e3a5f;
+    --bg-page:          #0f172a;
+    --bg-panel:         #1e293b;
+    --text:             #e2e8f0;
+    --text-soft:        #cbd5e1;
+    --text-mute:        #94a3b8;
+    --border:           #334155;
+    --shadow:           0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --hover-bg:         rgba(148, 163, 184, 0.18);
+    color-scheme:       dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: background-color 200ms, color 200ms;
+  }
+  header {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header img { width: 36px; height: 36px; }
+  header span.brand { font-weight: 700; font-size: 18px; color: var(--ulak-blue); }
+  header .spacer { flex: 1; }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background-color 120ms, border-color 120ms;
+  }
+  .theme-toggle:hover { background: var(--hover-bg); }
+  .theme-toggle svg   { width: 18px; height: 18px; }
+  .theme-toggle .icon-sun  { display: none; }
+  .theme-toggle .icon-moon { display: inline-block; }
+  :root.theme-dark .theme-toggle .icon-sun  { display: inline-block; }
+  :root.theme-dark .theme-toggle .icon-moon { display: none; }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .card {
+    max-width: 560px;
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px 40px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .badge {
+    display: inline-block;
+    background: var(--ulak-blue-soft);
+    color: var(--ulak-blue-dark);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  :root.theme-dark .badge { color: var(--ulak-blue); }
+  h1 { font-size: 32px; margin: 0 0 12px; color: var(--text); }
+  .lede { color: var(--text-soft); font-size: 16px; line-height: 1.5; margin: 0 0 32px; }
+  .cta {
+    display: inline-block;
+    background: var(--ulak-blue);
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: background-color 120ms;
+  }
+  .cta:hover { background: var(--ulak-blue-dark); }
+  :root.theme-dark .cta       { color: #0f172a; }
+  :root.theme-dark .cta:hover { color: #ffffff; }
+
+  .features {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    text-align: left;
+  }
+  .features h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-mute);
+    margin: 0 0 16px;
+    text-align: center;
+  }
+  .features ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .features li {
+    color: var(--text-soft);
+    font-size: 14px;
+    padding-left: 22px;
+    position: relative;
+    line-height: 1.4;
+  }
+  .features li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--ulak-blue);
+    font-weight: 700;
+  }
+  footer {
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    text-align: center;
+    color: var(--text-mute);
+    font-size: 13px;
+  }
+  @media (max-width: 540px) {
+    .card { padding: 32px 24px; }
+    h1 { font-size: 26px; }
+    .features ul { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="/landing-assets/logo.svg" alt="UlakPDF" onerror="this.style.display='none'">
+  <span class="brand">UlakPDF</span>
+  <div class="spacer"></div>
+  <button id="theme-toggle" class="theme-toggle" type="button" title="Tema değiştir" aria-label="Tema değiştir">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2"/><path d="M12 20v2"/>
+      <path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/>
+      <path d="M2 12h2"/><path d="M20 12h2"/>
+      <path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/>
+    </svg>
+  </button>
+</header>
+
+<main>
+  <div class="card">
+    <span class="badge">Ulakbim Bulut</span>
+    <h1>UlakPDF</h1>
+    <p class="lede">
+      Tarayıcıda çalışan, dosyalarınızın sunucuya yüklenmediği bir PDF araç setidir.
+      Devam etmek için Yetkim SSO ile oturum açın.
+    </p>
+    <a class="cta" href="/Shibboleth.sso/Login?target=/">Yetkim SSO</a>
+    <p style="margin: 20px 0 0; font-size: 13px; color: var(--text-mute);">
+      Daha fazla bilgi için <a href="/docs/" style="color: var(--ulak-blue); text-decoration: none;">dokümantasyon</a>.
+    </p>
+
+    <div class="features">
+      <h2>Neler yapabilirsiniz</h2>
+      <ul>
+        <li>PDF birleştirme &amp; bölme</li>
+        <li>Dönüştürme (Word, görsel, e-kitap)</li>
+        <li>Düzenleme &amp; sayfa yönetimi</li>
+        <li>Şifreleme &amp; imza</li>
+        <li>OCR &amp; metin çıkarma</li>
+        <li>Form oluşturma &amp; doldurma</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Ulakbim Bulut. All rights reserved.</footer>
+
+<script>
+  (function () {
+    var html = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    btn.addEventListener('click', function () {
+      var dark = html.classList.toggle('theme-dark');
+      try { localStorage.setItem('spdf-theme', dark ? 'dark' : 'light'); } catch (_) {}
+    });
+  })();
+</script>
+
+</body>
+</html>
