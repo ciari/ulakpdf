@@ -98,6 +98,18 @@ def _init_db() -> None:
                 k   TEXT PRIMARY KEY,
                 v   TEXT
             );
+
+            -- KVKK consent ledger. One row per user; UPSERT on re-acceptance
+            -- (e.g. after policy version bump or cookie loss).
+            CREATE TABLE IF NOT EXISTS consents (
+                user_id      TEXT PRIMARY KEY,    -- mail (or eppn fallback)
+                mail         TEXT,
+                affil        TEXT,
+                version      TEXT NOT NULL,
+                accepted_at  TEXT NOT NULL,       -- ISO 8601
+                ip           TEXT,
+                ua           TEXT
+            );
         """)
 
 
@@ -196,6 +208,10 @@ def db():
         c = _connect()
         try:
             yield c
+            c.commit()        # Persist any writes (consent INSERTs etc.).
+        except Exception:
+            c.rollback()
+            raise
         finally:
             c.close()
 
@@ -209,18 +225,36 @@ def _date_range(days: int) -> tuple[str, str]:
 # ---- Admin gate: every /api/* endpoint requires X-Remote-User ∈ ADMIN_EPPNS.
 #      X-Remote-User is set by nginx after Shibboleth auth — we trust it.
 
+def _user_id(x_remote_user: str | None, x_remote_mail: str | None) -> str:
+    # Same fallback as the ingest loop: prefer eppn, fall back to mail for
+    # IdPs that don't release eduPersonPrincipalName.
+    return (x_remote_user or x_remote_mail or "").strip().lower()
+
+
+def require_user(
+    x_remote_user: str | None = Header(default=None),
+    x_remote_mail: str | None = Header(default=None),
+) -> str:
+    user = _user_id(x_remote_user, x_remote_mail)
+    if not user:
+        raise HTTPException(401, "Shibboleth session required (no X-Remote-User / X-Remote-Mail)")
+    return user
+
+
 def require_admin(
     x_remote_user: str | None = Header(default=None),
     x_remote_mail: str | None = Header(default=None),
 ) -> str:
-    # Same fallback as the ingest loop: prefer eppn, fall back to mail for
-    # IdPs that don't release eduPersonPrincipalName.
-    user = (x_remote_user or x_remote_mail or "").strip().lower()
-    if not user:
-        raise HTTPException(401, "Shibboleth session required (no X-Remote-User / X-Remote-Mail)")
+    user = require_user(x_remote_user, x_remote_mail)
     if not ADMIN_EPPNS or user not in ADMIN_EPPNS:
         raise HTTPException(403, f"{user} is not an admin")
     return user
+
+
+# Current KVKK / EULA version. Bump this when the consent text changes
+# materially — users are re-prompted to re-accept the new version.
+CONSENT_VERSION = "v1"
+CONSENT_COOKIE_MAX_AGE = 365 * 24 * 3600   # 1 year
 
 
 # /api/healthz is intentionally unguarded so the docker healthcheck works.
@@ -229,6 +263,79 @@ def require_admin(
 @app.get("/api/healthz")
 def health():
     return {"ok": True, "log_exists": LOG_PATH.exists(), "admin_count": len(ADMIN_EPPNS)}
+
+
+# ---- KVKK consent ----
+# Open to any authenticated Shibboleth user; gated only by require_user.
+# Acceptance is recorded once; the spdf-consent cookie is then trusted by
+# nginx for fast-path checks. If the cookie is lost but the DB row exists,
+# next visit re-shows the consent page; on accept we just refresh the cookie.
+
+@app.post("/api/consent")
+def accept_consent(
+    request: Request,
+    x_remote_user: str | None = Header(default=None),
+    x_remote_mail: str | None = Header(default=None),
+    x_remote_affil: str | None = Header(default=None),
+):
+    user = require_user(x_remote_user, x_remote_mail)
+    now = datetime.now(timezone.utc).isoformat()
+    with db() as c:
+        c.execute(
+            "INSERT INTO consents(user_id, mail, affil, version, accepted_at, ip, ua) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET "
+            "  mail=excluded.mail, affil=excluded.affil, "
+            "  version=excluded.version, accepted_at=excluded.accepted_at, "
+            "  ip=excluded.ip, ua=excluded.ua",
+            (
+                user,
+                (x_remote_mail or "").strip().lower() or None,
+                (x_remote_affil or "").strip() or None,
+                CONSENT_VERSION,
+                now,
+                request.client.host if request.client else None,
+                (request.headers.get("user-agent") or "")[:500],
+            ),
+        )
+    resp = JSONResponse({"ok": True, "version": CONSENT_VERSION, "accepted_at": now})
+    resp.set_cookie(
+        "spdf-consent",
+        CONSENT_VERSION,
+        max_age=CONSENT_COOKIE_MAX_AGE,
+        path="/",
+        httponly=False,        # JS can read it; non-sensitive
+        samesite="lax",
+        secure=False,          # nginx terminates TLS — TLS cookie set by host nginx if needed
+    )
+    return resp
+
+
+@app.get("/api/consent/status")
+def consent_status(
+    x_remote_user: str | None = Header(default=None),
+    x_remote_mail: str | None = Header(default=None),
+):
+    user = _user_id(x_remote_user, x_remote_mail)
+    if not user:
+        return {"accepted": False, "version_required": CONSENT_VERSION}
+    with db() as c:
+        row = c.execute(
+            "SELECT version, accepted_at FROM consents WHERE user_id = ?",
+            (user,),
+        ).fetchone()
+    if row and row["version"] == CONSENT_VERSION:
+        return {
+            "accepted": True,
+            "version_required": CONSENT_VERSION,
+            "version_accepted": row["version"],
+            "accepted_at": row["accepted_at"],
+        }
+    return {
+        "accepted": False,
+        "version_required": CONSENT_VERSION,
+        "version_accepted": row["version"] if row else None,
+    }
 
 
 @app.get("/api/summary")

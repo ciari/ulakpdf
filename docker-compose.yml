@@ -146,6 +146,8 @@ services:
       - ./stats-admin:/etc/nginx/stats-admin:ro
       # Public landing page shown to anonymous visitors.
       - ./landing:/etc/nginx/landing:ro
+      # KVKK consent page shown after first login.
+      - ./consent:/etc/nginx/consent:ro
     networks:
       - spdf
 

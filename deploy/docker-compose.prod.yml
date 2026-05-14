@@ -101,6 +101,7 @@ services:
       - nginx-logs:/var/log/nginx
       - ../stats-admin:/etc/nginx/stats-admin:ro
       - ../landing:/etc/nginx/landing:ro
+      - ../consent:/etc/nginx/consent:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null -w '%{http_code}' http://localhost/Shibboleth.sso/Metadata | grep -q 200"]
       interval: 30s
