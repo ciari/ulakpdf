@@ -42,8 +42,3 @@ sonuç tarayıcıda hazırlanıp size indirme olarak sunulur.
     artırır. Sayfayı yenilemek veya kapatmak belleği serbest bırakır.
     Sunucu hiçbir kayıt tutmaz.
 
-## Yetkilerinize göre değişen şeyler
-
-- Standart kullanıcı: tüm PDF araçlarını kullanabilir.
-- Yönetici (`ADMIN_EPPNS` listesindeki eppn'ler): aynı araçlara ek
-  olarak `/stats/` adresinden [yönetici panelini](yonetici.md) görür.

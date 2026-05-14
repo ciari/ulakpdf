@@ -17,12 +17,6 @@ UlakPDF, dosyalarınızı sunucuya yüklemeden çalışan bir PDF araç koleksiy
 2. **[Arayüz Turu →](kullanim/arayuz.md)** — Üst çubuk, tema, çıkış
 3. **[PDF Araçları →](kullanim/araclar.md)** — Hangi araçlar var, ne yaparlar
 
-## Yönetici misiniz?
-
-Eğer yöneticilik yetkisi tanımlanmış bir kullanıcıysanız `/stats/`
-adresinden kullanım istatistiklerini görebilirsiniz —
-**[Yönetici Paneli →](kullanim/yonetici.md)**.
-
 ## Yardım & destek
 
 Bir sorun yaşıyorsanız:
