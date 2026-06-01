@@ -185,13 +185,10 @@
 
     function init() {
         // Re-apply once more in case the early script didn't run (paranoid).
-        var pref = readPref();
-        if (pref === 'light' || pref === 'dark') {
-            applyTheme(pref);
-        } else if (window.matchMedia &&
-                   window.matchMedia('(prefers-color-scheme: light)').matches) {
-            applyTheme('light');
-        }
+        // Default to light: BentoPDF originally defaulted dark, but UlakPDF's
+        // brand palette and most institutional usage works better in light.
+        // Users can toggle and the choice persists in localStorage.
+        applyTheme(readPref() || 'light');
         var btn = buildButton();
         var menu = buildUserMenu();
         placeButton(btn, menu);

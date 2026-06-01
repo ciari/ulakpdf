@@ -26,7 +26,7 @@ cp "$OVERLAY/theme-toggle.js" "$DIST/theme-toggle.js"
 
 # Inline early-paint script (must be the first thing in <head>). Reads stored
 # preference, falls back to OS prefers-color-scheme, otherwise leaves dark.
-INLINE='<script>(function(){try{var t=localStorage.getItem("spdf-theme");if(!t&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)t="light";if(t==="light")document.documentElement.classList.add("theme-light");}catch(_){}})();</script>'
+INLINE='<script>(function(){try{var t=localStorage.getItem("spdf-theme")||"light";if(t==="light")document.documentElement.classList.add("theme-light");}catch(_){}})();</script>'
 
 LINK='<link rel="stylesheet" href="/light-theme.css">'
 DEFER='<script src="/theme-toggle.js" defer></script>'
