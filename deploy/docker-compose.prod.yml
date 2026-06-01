@@ -20,6 +20,7 @@ services:
         SIMPLE_MODE: "true"
         VITE_BRAND_NAME: "${VITE_BRAND_NAME:-UlakPDF}"
         VITE_FOOTER_TEXT: "${VITE_FOOTER_TEXT:-}"
+        VITE_BRAND_LOGO: "${VITE_BRAND_LOGO:-images/ulakpdf-logo.png}"
     image: ulakpdf-bentopdf:branded
     container_name: ulakpdf-bentopdf
     restart: always

@@ -70,8 +70,14 @@
     align-items: center;
     gap: 12px;
   }
-  header img { width: 36px; height: 36px; }
-  header span.brand { font-weight: 700; font-size: 18px; color: var(--ulak-blue); }
+  header img {
+    height: 36px;
+    width: auto;
+    max-width: 200px;
+    display: block;
+  }
+  /* The logo PNG already shows the wordmark, so hide the redundant text. */
+  header span.brand { display: none; }
   header .spacer { flex: 1; }
 
   .theme-toggle {
@@ -195,7 +201,7 @@
 <body>
 
 <header>
-  <img src="/landing-assets/logo.svg" alt="UlakPDF" onerror="this.style.display='none'">
+  <img src="/landing-assets/logo.png" alt="UlakPDF" onerror="this.style.display='none'">
   <span class="brand">UlakPDF</span>
   <div class="spacer"></div>
   <button id="theme-toggle" class="theme-toggle" type="button" title="Tema değiştir" aria-label="Tema değiştir">

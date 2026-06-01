@@ -112,6 +112,21 @@ html.theme-light code {
     color: var(--light-text)                 !important;
 }
 
+/* Navbar logo + brand override — applies in both themes.
+   The UlakPDF logo PNG is a wide horizontal wordmark (~3.23:1), so the
+   default Tailwind `h-8 w-8` square sizing crops it. Force aspect-ratio
+   preserving height-bound layout and hide the redundant text wordmark
+   since the PNG itself already contains it. */
+#nav-logo,
+nav img.h-8.w-8 {
+    height: 32px !important;
+    width: auto !important;
+    max-width: 180px !important;
+}
+#nav-brand {
+    display: none !important;
+}
+
 /* Theme toggle button — appearance kept subtle, follows current panel color */
 .spdf-theme-toggle {
     display: inline-flex;
