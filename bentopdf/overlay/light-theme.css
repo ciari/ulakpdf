@@ -112,20 +112,45 @@ html.theme-light code {
     color: var(--light-text)                 !important;
 }
 
-/* Navbar logo + brand override — applies in both themes.
+/* Navbar + footer logo override — applies in both themes.
    The UlakPDF logo PNG is a wide horizontal wordmark (~3.23:1), so the
-   default Tailwind `h-8 w-8` square sizing crops it. Force aspect-ratio
-   preserving height-bound layout and hide the redundant text wordmark
-   since the PNG itself already contains it. */
-#nav-logo,
-nav img.h-8.w-8 {
+   default Tailwind `h-8 w-8` square sizing crops/distorts it. Allow the
+   image to grow to its natural width while staying height-bound, and
+   hide the redundant "UlakPDF" text wordmark next to it since the PNG
+   already shows it.
+
+   Selectors are structural (data-* attributes + adjacent <span>) rather
+   than id-based: the rendered HTML in current BentoPDF builds doesn't
+   carry #nav-logo / #nav-brand ids. */
+
+/* Simple-mode navbar (default for our UlakPDF install). */
+nav[data-simple-nav] img {
     height: 32px !important;
     width: auto !important;
-    max-width: 180px !important;
+    max-width: 200px !important;
 }
-#nav-brand {
+nav[data-simple-nav] .flex-shrink-0 > span {
     display: none !important;
 }
+
+/* Simple-mode footer block — same logo+text cluster. */
+footer[data-simple-footer] img {
+    height: 32px !important;
+    width: auto !important;
+    max-width: 200px !important;
+    margin-right: 0 !important;
+}
+footer[data-simple-footer] .flex.items-center > span {
+    display: none !important;
+}
+
+/* Belt-and-suspenders for older/full navbars that still ship #nav-logo. */
+#nav-logo {
+    height: 32px !important;
+    width: auto !important;
+    max-width: 200px !important;
+}
+#nav-brand { display: none !important; }
 
 /* Theme toggle button — appearance kept subtle, follows current panel color */
 .spdf-theme-toggle {
