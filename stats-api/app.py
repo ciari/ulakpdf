@@ -253,7 +253,8 @@ def require_admin(
 
 # Current KVKK / EULA version. Bump this when the consent text changes
 # materially — users are re-prompted to re-accept the new version.
-CONSENT_VERSION = "v1"
+# v2 (2026-06): aligned with TÜBİTAK KVKK metni, added contact channels.
+CONSENT_VERSION = "v2"
 CONSENT_COOKIE_MAX_AGE = 365 * 24 * 3600   # 1 year
 
 

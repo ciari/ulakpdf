@@ -77,6 +77,25 @@
     display: flex; gap: 10px; align-items: flex-start;
     padding: 14px; background: var(--ulak-blue-soft); border-radius: 8px;
   }
+  .official-banner {
+    display: flex; gap: 12px; align-items: center;
+    padding: 14px 16px; margin: 0 0 24px;
+    background: var(--ulak-blue-soft); border-left: 4px solid var(--ulak-blue);
+    border-radius: 8px; color: var(--text);
+  }
+  .official-banner svg {
+    width: 22px; height: 22px; flex-shrink: 0; color: var(--ulak-blue);
+  }
+  .official-banner a { color: var(--ulak-blue-dark); font-weight: 600; }
+  :root.theme-dark .official-banner a { color: var(--ulak-blue); }
+  .contact-box {
+    background: var(--bg-page); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; margin: 8px 0;
+    font-size: 14px;
+  }
+  .contact-box dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; }
+  .contact-box dt { color: var(--text-mute); font-weight: 600; }
+  .contact-box dd { margin: 0; color: var(--text); }
   :root.theme-dark .checkbox-row { background: var(--ulak-blue-soft); }
   .checkbox-row input[type=checkbox] {
     width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;
@@ -117,11 +136,33 @@
     <h1>Aydınlatma Metni & Kullanım Şartları</h1>
     <p class="subtitle">UlakPDF'i kullanmaya başlamadan önce lütfen bu metni okuyup kabul edin.</p>
 
+    <div class="official-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>
+        Aşağıdaki metin, UlakPDF hizmetine özgü veri işleme süreçlerini özetler.
+        Güncel ve genel TÜBİTAK KVKK Aydınlatma Metni için
+        <a href="https://tubitak.gov.tr/tr/kvkk" target="_blank" rel="noopener">tıklayın</a>.
+      </span>
+    </div>
+
     <h2>Veri Sorumlusu</h2>
     <p>
-      <strong>TÜBİTAK ULAKBİM</strong> (Ulusal Akademik Ağ ve Bilgi Merkezi),
-      KVKK m.3/1-(ı) kapsamında veri sorumlusudur.
+      KVKK m.3/1-(ı) kapsamında veri sorumlusu
+      <strong>Türkiye Bilimsel ve Teknolojik Araştırma Kurumu (TÜBİTAK)</strong>'dır;
+      UlakPDF hizmeti TÜBİTAK adına <strong>ULAKBİM</strong> (Ulusal Akademik Ağ
+      ve Bilgi Merkezi) tarafından işletilir.
     </p>
+    <div class="contact-box">
+      <dl>
+        <dt>Adres</dt><dd>TÜBİTAK Tunus Caddesi No:80, 06680 Kavaklıdere / Ankara</dd>
+        <dt>KEP</dt><dd><a href="mailto:tubitak.baskanlik@tubitak.hs03.kep.tr">tubitak.baskanlik@tubitak.hs03.kep.tr</a></dd>
+        <dt>Telefon</dt><dd>0 312 468 53 00</dd>
+        <dt>UlakPDF</dt><dd><a href="mailto:bulut@ulakbim.gov.tr">bulut@ulakbim.gov.tr</a> (servise özgü teknik destek)</dd>
+      </dl>
+    </div>
 
     <h2>İşlenen Kişisel Veriler</h2>
     <p>
@@ -161,10 +202,17 @@
 
     <h2>Hukuki Sebep</h2>
     <p>
-      KVKK m.5/2-(c) sözleşmenin ifası (servisi kullanma talebinizin yerine
-      getirilmesi) ve m.5/2-(f) meşru menfaat (servis güvenliği ve erişim
-      kontrolü) çerçevesinde işlenir.
+      Verileriniz KVKK m.5/2 kapsamında aşağıdaki hukuki sebeplere
+      dayanılarak işlenir:
     </p>
+    <ul>
+      <li><strong>m.5/2-(c)</strong> sözleşmenin kurulması veya ifası
+        — servisi kullanma talebinizin karşılanması</li>
+      <li><strong>m.5/2-(e)</strong> bir hakkın tesisi, kullanılması veya
+        korunması — erişim ve yetki yönetimi</li>
+      <li><strong>m.5/2-(f)</strong> veri sorumlusunun meşru menfaati
+        — servis güvenliği, kötüye kullanım tespiti, bilişim güvenliği</li>
+    </ul>
 
     <h2>Saklama Süresi</h2>
     <ul>
@@ -175,8 +223,12 @@
 
     <h2>Veri Aktarımı</h2>
     <p>
-      Kişisel verileriniz <strong>yurt dışına aktarılmaz</strong>. Üçüncü
-      taraflarla paylaşılmaz. Tüm veriler ULAKBİM altyapısında tutulur.
+      UlakPDF kapsamında işlenen kişisel verileriniz <strong>yurt dışına
+      aktarılmaz</strong> ve tüm veriler ULAKBİM altyapısında tutulur.
+      TÜBİTAK'ın genel kurumsal faaliyetleri kapsamında ilgili kamu kurum
+      ve kuruluşlarıyla yasal yükümlülükler çerçevesinde paylaşım söz
+      konusu olabilir; bu kapsamlı çerçeve için yukarıdaki bağlantıdaki
+      güncel TÜBİTAK KVKK Aydınlatma Metni referans alınır.
     </p>
 
     <h2>Haklarınız (KVKK m.11)</h2>
@@ -189,7 +241,23 @@
       <li>Otomatik sistemlerle yapılan analize itiraz etme</li>
     </ul>
     <p>
-      Bu haklarınızı kullanmak için: <a href="mailto:bulut@ulakbim.gov.tr">bulut@ulakbim.gov.tr</a>
+      <strong>Başvuru kanalları:</strong>
+    </p>
+    <ul>
+      <li>
+        Resmi başvuru için (kimlik doğrulamalı):
+        TÜBİTAK Tunus Caddesi No:80, 06680 Kavaklıdere / Ankara —
+        ya da KEP: <a href="mailto:tubitak.baskanlik@tubitak.hs03.kep.tr">tubitak.baskanlik@tubitak.hs03.kep.tr</a>
+      </li>
+      <li>
+        UlakPDF'e özgü teknik konular için:
+        <a href="mailto:bulut@ulakbim.gov.tr">bulut@ulakbim.gov.tr</a>
+      </li>
+    </ul>
+    <p>
+      KVKK kapsamındaki haklarınızın detayları ve resmî başvuru formatı
+      için <a href="https://tubitak.gov.tr/tr/kvkk" target="_blank" rel="noopener">tubitak.gov.tr/tr/kvkk</a>
+      adresindeki güncel metni inceleyin.
     </p>
 
     <h2>Kullanım Şartları (Özet)</h2>
@@ -238,7 +306,7 @@ accept.addEventListener('click', async () => {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ version: 'v1' }),
+      body: JSON.stringify({ version: 'v2' }),
     });
     if (!r.ok) {
       const detail = await r.text();
