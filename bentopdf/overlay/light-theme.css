@@ -90,6 +90,54 @@ html.theme-light .bg-gray-800 {
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.02);
 }
 
+/* Category headers (tool grid section titles) are hardcoded `color: #fff`
+   in the upstream stylesheet — invisible on a white background. Restore
+   readable contrast in light theme; hover still gets the Ulakbim accent. */
+html.theme-light .category-header {
+    color: var(--light-text) !important;
+}
+html.theme-light .category-header .category-chevron {
+    color: var(--light-text-mute) !important;
+}
+html.theme-light .category-header:hover,
+html.theme-light .category-header:hover .category-chevron {
+    color: var(--ulak-blue) !important;
+}
+
+/* Language switcher dropdown — JS-created at runtime with Tailwind classes
+   that target dark backgrounds (bg-gray-800, text-gray-200). Our generic
+   class overrides exist but high-specificity ID-scoped rules guarantee the
+   first paint after open is already themed correctly (no flicker). */
+html.theme-light #language-switcher [role="menu"] {
+    background-color: var(--light-bg-panel) !important;
+    border-color: var(--light-border) !important;
+    color: var(--light-text) !important;
+}
+html.theme-light #language-switcher [role="menuitem"] {
+    color: var(--light-text) !important;
+    background-color: transparent !important;
+}
+html.theme-light #language-switcher [role="menuitem"].bg-gray-700,
+html.theme-light #language-switcher [role="menuitem"]:hover {
+    background-color: var(--light-bg-hover) !important;
+}
+html.theme-light #language-switcher input[type="search"] {
+    background-color: var(--light-bg-panel) !important;
+    color: var(--light-text) !important;
+    border-color: var(--light-border-str) !important;
+}
+html.theme-light #language-switcher input[type="search"]::placeholder {
+    color: var(--light-text-mute) !important;
+}
+html.theme-light #language-switcher button[aria-haspopup="true"] {
+    background-color: var(--light-bg-panel) !important;
+    color: var(--light-text) !important;
+    border-color: var(--light-border-str) !important;
+}
+html.theme-light #language-switcher button[aria-haspopup="true"]:hover {
+    background-color: var(--light-bg-hover) !important;
+}
+
 /* SVG icons that rely on currentColor look fine; explicit fills sometimes don't */
 html.theme-light svg[class*="text-gray"]    { color: var(--light-text-mute) !important; }
 html.theme-light svg[class*="text-white"]   { color: var(--light-text)      !important; }
