@@ -177,18 +177,25 @@ nav[data-simple-nav] img {
     width: auto !important;
     max-width: 200px !important;
 }
-nav[data-simple-nav] .flex-shrink-0 > span {
+/* Hide ONLY the wordmark span that sits right next to the logo image.
+   The previous .flex-shrink-0 > span selector was too broad and also
+   hid the language names inside the simple-mode footer's language
+   switcher (option buttons use `flex items-center gap-2` and have a
+   <span> with the language name). The `img + span` pattern only
+   matches a span that is the immediate sibling of an img — exactly the
+   logo+brand cluster. */
+nav[data-simple-nav] img + span {
     display: none !important;
 }
 
-/* Simple-mode footer block — same logo+text cluster. */
+/* Simple-mode footer logo block — same logo+text cluster. */
 footer[data-simple-footer] img {
     height: 32px !important;
     width: auto !important;
     max-width: 200px !important;
     margin-right: 0 !important;
 }
-footer[data-simple-footer] .flex.items-center > span {
+footer[data-simple-footer] img + span {
     display: none !important;
 }
 
