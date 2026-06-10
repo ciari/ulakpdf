@@ -6,11 +6,31 @@
 #   - No bind-mount of idp-config (real IdP has its own config)
 #   - Adds restart: always for resilience
 #   - Healthchecks tightened for monitoring
+#   - All container stdout/stderr is shipped to ULAKBİM syslog over UDP 514
 #
 # Usage:
 #   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
+#
+# Note on logging: with the syslog driver below, `docker logs <container>`
+# returns "configured logging driver does not support reading". To debug
+# locally, either:
+#   - go to loghost.ulakbim.gov.tr (the authoritative log destination), or
+#   - `docker exec <container> tail -f /var/log/nginx/access.log` for nginx.
+# To temporarily disable syslog shipping, set SYSLOG_DRIVER=json-file in .env.
 
 name: ulakpdf
+
+# Shared logging config — every service ships stdout/stderr to ULAKBİM's
+# central log collector. SYSLOG_ADDRESS lets you override the destination
+# (e.g. to a staging loghost). SYSLOG_DRIVER lets you fall back to
+# json-file for local debugging.
+x-logging: &default-logging
+  driver: "${SYSLOG_DRIVER:-syslog}"
+  options:
+    syslog-address: "${SYSLOG_ADDRESS:-udp://loghost.ulakbim.gov.tr:514}"
+    syslog-format:  "${SYSLOG_FORMAT:-rfc5424}"
+    syslog-facility: "${SYSLOG_FACILITY:-local6}"
+    tag: "ulakpdf/{{.Name}}"
 
 services:
   bentopdf:
@@ -32,6 +52,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging: *default-logging
     networks:
       - ulakpdf
 
@@ -49,6 +70,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    logging: *default-logging
     networks:
       - ulakpdf
 
@@ -71,6 +93,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    logging: *default-logging
     networks:
       - ulakpdf
 
@@ -109,6 +132,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging: *default-logging
     networks:
       - ulakpdf
 

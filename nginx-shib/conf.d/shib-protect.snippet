@@ -40,4 +40,6 @@ proxy_set_header X-Shib-Session    $shib_session_id;
 
 # Tap every Shibboleth-authenticated request into the stats log. shib_*
 # variables are guaranteed to have values here (shib_request_set above).
+# stdout copy goes to remote syslog (loghost.ulakbim.gov.tr) for audit.
 access_log /var/log/nginx/stats.log stats;
+access_log /dev/stdout              stats;
