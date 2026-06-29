@@ -78,7 +78,7 @@ install -m 0644 "${PROJECT_DIR}/deploy/logrotate.conf" /etc/logrotate.d/ulakpdf
 # A local copy lives under /var/log/ulakpdf/ as a safety net.
 echo "[install] rsyslog forwarder..."
 mkdir -p /var/log/ulakpdf
-chown syslog:adm /var/log/ulakpdf
+chmod 0750 /var/log/ulakpdf
 install -m 0644 "${PROJECT_DIR}/deploy/rsyslog/ulakpdf.conf" /etc/rsyslog.d/30-ulakpdf.conf
 # Validate before bouncing the daemon.
 if rsyslogd -N1 -f /etc/rsyslog.d/30-ulakpdf.conf >/dev/null 2>&1; then
