@@ -143,6 +143,8 @@ services:
       - shib-state:/etc/shibboleth
       # Shared with stats-api so it can tail the JSON access log.
       - nginx-logs:/var/log/nginx
+      # Persistent shibd logs so host rsyslog (in prod) can tail them.
+      - shib-logs:/var/log/shibboleth
       # Static admin dashboard, served from /stats/ in nginx.
       - ./stats-admin:/etc/nginx/stats-admin:ro
       # Public landing page shown to anonymous visitors.
@@ -158,5 +160,6 @@ networks:
 
 volumes:
   shib-state:
+  shib-logs:
   nginx-logs:
   stats-db:

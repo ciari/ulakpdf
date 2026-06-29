@@ -26,6 +26,7 @@ apt-get update -qq
 apt-get install -y --no-install-recommends \
     ca-certificates curl gnupg lsb-release \
     nginx certbot python3-certbot-nginx \
+    rsyslog \
     ufw logrotate \
     git rsync
 
@@ -71,6 +72,22 @@ fi
 # ---------- 6. Log rotation for the docker stack's nginx logs ----------
 echo "[install] logrotate..."
 install -m 0644 "${PROJECT_DIR}/deploy/logrotate.conf" /etc/logrotate.d/ulakpdf
+
+# ---------- 7. rsyslog: forward stats.log + shibd transaction.log to loghost ----
+# imfile tails the named-volume paths on disk and forwards to UDP 514.
+# A local copy lives under /var/log/ulakpdf/ as a safety net.
+echo "[install] rsyslog forwarder..."
+mkdir -p /var/log/ulakpdf
+chown syslog:adm /var/log/ulakpdf
+install -m 0644 "${PROJECT_DIR}/deploy/rsyslog/ulakpdf.conf" /etc/rsyslog.d/30-ulakpdf.conf
+# Validate before bouncing the daemon.
+if rsyslogd -N1 -f /etc/rsyslog.d/30-ulakpdf.conf >/dev/null 2>&1; then
+    systemctl restart rsyslog
+    echo "[install] rsyslog reloaded; tailing logs to loghost.ulakbim.gov.tr"
+else
+    echo "[install] WARNING: rsyslog config validation failed — not restarting."
+    echo "[install] Run 'rsyslogd -N1' to see errors, then 'systemctl restart rsyslog'."
+fi
 
 # ---------- 7. Disable default nginx site (don't serve "Welcome to nginx" on our domain) ----------
 if [ -L /etc/nginx/sites-enabled/default ]; then
