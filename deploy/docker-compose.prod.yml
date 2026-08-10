@@ -9,7 +9,7 @@
 #
 # Remote logging is handled by host rsyslog (see deploy/rsyslog/ulakpdf.conf),
 # which tails stats.log and shibd's transaction.log directly from named
-# volumes and forwards to loghost.ulakbim.gov.tr. Containers themselves use
+# volumes and forwards to loghost.example.tr. Containers themselves use
 # Docker's default json-file driver so `docker logs <container>` keeps
 # working for ad-hoc debugging.
 #

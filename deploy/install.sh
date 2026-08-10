@@ -83,7 +83,7 @@ install -m 0644 "${PROJECT_DIR}/deploy/rsyslog/ulakpdf.conf" /etc/rsyslog.d/30-u
 # Validate before bouncing the daemon.
 if rsyslogd -N1 -f /etc/rsyslog.d/30-ulakpdf.conf >/dev/null 2>&1; then
     systemctl restart rsyslog
-    echo "[install] rsyslog reloaded; tailing logs to loghost.ulakbim.gov.tr"
+    echo "[install] rsyslog reloaded; tailing logs to loghost.example.tr"
 else
     echo "[install] WARNING: rsyslog config validation failed — not restarting."
     echo "[install] Run 'rsyslogd -N1' to see errors, then 'systemctl restart rsyslog'."

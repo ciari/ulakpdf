@@ -15,6 +15,10 @@ docs-site/site/
 __pycache__/
 *.pyc
 
+# Internal-only documents (not for public repo)
+yonetici-bilgi-dokumani.md
+duyuru.md
+
 # Editor / OS
 .DS_Store
 .idea/

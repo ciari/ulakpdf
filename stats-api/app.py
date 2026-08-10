@@ -132,8 +132,8 @@ def _ingest_line(c: sqlite3.Connection, line: str) -> None:
         rec = json.loads(line)
     except json.JSONDecodeError:
         return
-    # Identity fallback: some IdPs (e.g. kimlik.ulakbim.gov.tr in single-IdP
-    # mode) don't release eduPersonPrincipalName. Treat `mail` as the user
+    # Identity fallback: some IdPs in single-IdP
+    # mode don't release eduPersonPrincipalName. Treat `mail` as the user
     # identifier when `eppn` is empty. With Yetkim federation IdPs that DO
     # release eppn, the fallback never fires and behavior is unchanged.
     eppn = _first_value(rec.get("eppn")) or _first_value(rec.get("mail")) or None
