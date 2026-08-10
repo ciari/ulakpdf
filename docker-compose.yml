@@ -27,8 +27,9 @@ services:
         VITE_FOOTER_TEXT: "${VITE_FOOTER_TEXT:-}"
         VITE_BRAND_LOGO: "${VITE_BRAND_LOGO:-images/ulakpdf-logo.png}"
     image: spdf-bentopdf:branded
-    container_name: bentopdf
     restart: unless-stopped
+    deploy:
+      replicas: ${BENTOPDF_REPLICAS:-3}
     expose:
       - "8080"
     healthcheck:
@@ -113,6 +114,8 @@ services:
     container_name: spdf-nginx-shib
     restart: unless-stopped
     depends_on:
+      bentopdf:
+        condition: service_healthy
       test-idp:
         condition: service_healthy
       stats-api:

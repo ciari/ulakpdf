@@ -117,6 +117,32 @@ spawn-fcgi -u _shibd -g _shibd \
     -s "$SHIB_RUN/shibresponder.sock" -M 0666 \
     -- /usr/lib/x86_64-linux-gnu/shibboleth/shibresponder
 
-# 10) Hand off PID 1 to nginx (foreground) so signals propagate cleanly.
+# 10) Discover bentopdf replicas via Docker DNS and generate an upstream
+#     config so nginx can load-balance across all instances.
+echo "[entrypoint] Discovering bentopdf replicas..."
+BENTOPDF_IPS=$(getent ahosts bentopdf 2>/dev/null | awk '/STREAM/ {print $1}' | sort -u || true)
+BENTOPDF_SERVERS=""
+for ip in $BENTOPDF_IPS; do
+    BENTOPDF_SERVERS="${BENTOPDF_SERVERS}    server ${ip}:8080;
+"
+done
+if [ -z "$BENTOPDF_SERVERS" ]; then
+    echo "[entrypoint] WARNING: no bentopdf replicas found via DNS; falling back to service name."
+    BENTOPDF_SERVERS="    server bentopdf:8080;
+"
+fi
+REPLICA_COUNT=$(echo "$BENTOPDF_IPS" | grep -c . 2>/dev/null || echo 1)
+echo "[entrypoint] Found $REPLICA_COUNT bentopdf replica(s)."
+
+cat > /etc/nginx/conf.d/00-upstream-bentopdf.conf <<UPSTREAM_EOF
+upstream bentopdf_pool {
+    # Uncomment for sticky sessions (pin client IP to one replica):
+    # ip_hash;
+
+${BENTOPDF_SERVERS}}
+UPSTREAM_EOF
+cat /etc/nginx/conf.d/00-upstream-bentopdf.conf
+
+# 11) Hand off PID 1 to nginx (foreground) so signals propagate cleanly.
 echo "[entrypoint] Starting nginx..."
 exec nginx -g 'daemon off;'

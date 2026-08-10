@@ -28,8 +28,9 @@ services:
         VITE_FOOTER_TEXT: "${VITE_FOOTER_TEXT:-}"
         VITE_BRAND_LOGO: "${VITE_BRAND_LOGO:-images/ulakpdf-logo.png}"
     image: ulakpdf-bentopdf:branded
-    container_name: ulakpdf-bentopdf
     restart: always
+    deploy:
+      replicas: ${BENTOPDF_REPLICAS:-3}
     expose:
       - "8080"
     healthcheck:
@@ -86,6 +87,11 @@ services:
     image: ulakpdf-nginx-shib
     container_name: ulakpdf-nginx-shib
     restart: always
+    depends_on:
+      bentopdf:
+        condition: service_healthy
+      stats-api:
+        condition: service_healthy
     # Bind to loopback only — host nginx (TLS terminator) reaches it via
     # 127.0.0.1:8081, the public internet does not.
     ports:
