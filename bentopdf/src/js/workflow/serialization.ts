@@ -3,6 +3,7 @@ import type { AreaPlugin } from 'rete-area-plugin';
 import type { ClassicScheme, LitArea2D } from '@retejs/lit-plugin';
 import type { BaseWorkflowNode } from './nodes/base-node';
 import { createNodeByType } from './nodes/registry';
+import { downloadFile } from '../utils/helpers.js';
 import { ClassicPreset } from 'rete';
 import type {
   SerializedWorkflow,
@@ -205,19 +206,14 @@ export function deleteTemplate(name: string): void {
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
 }
 
-export function exportWorkflow(
+export async function exportWorkflow(
   editor: NodeEditor<ClassicScheme>,
   area: AreaPlugin<ClassicScheme, AreaExtra>
-): void {
+): Promise<void> {
   const data = serializeWorkflow(editor, area);
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'workflow.json';
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await downloadFile(blob, 'workflow.json');
 }
 
 export async function importWorkflow(

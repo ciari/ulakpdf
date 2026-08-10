@@ -71,7 +71,29 @@ export const formatBytes = (bytes: number, decimals = 1) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-export const downloadFile = (blob: Blob, filename: string): void => {
+export const downloadFile = async (blob: Blob, filename: string): Promise<void> => {
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const dot = filename.lastIndexOf('.');
+      const ext = dot > 0 ? filename.slice(dot) : '';
+      const opts: SaveFilePickerOptions = {
+        suggestedName: filename,
+        ...(ext && {
+          types: [{
+            description: ext.slice(1).toUpperCase() + ' file',
+            accept: { [blob.type || 'application/octet-stream']: [ext] },
+          }],
+        }),
+      };
+      const handle = await window.showSaveFilePicker(opts);
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

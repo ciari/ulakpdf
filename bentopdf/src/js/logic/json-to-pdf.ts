@@ -151,11 +151,7 @@ worker.onmessage = async (e: MessageEvent) => {
       });
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'jsons-to-pdf.zip';
-      downloadFile(zipBlob, 'jsons-to-pdf.zip');
+      await downloadFile(zipBlob, 'jsons-to-pdf.zip');
 
       showStatus(
         '✅ JSONs converted to PDF successfully! ZIP download started.',
