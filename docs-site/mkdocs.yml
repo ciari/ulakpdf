@@ -1,6 +1,8 @@
 site_name: UlakPDF
 site_description: Tarayıcıda çalışan PDF araç seti — kurum SSO ile korunur
 site_author: Ulakbim Bulut
+repo_url: https://github.com/ciari/ulakpdf
+repo_name: ciari/ulakpdf
 
 # Served behind nginx at /docs/. Relative URLs work at any base path so we
 # don't need to bake the public hostname into the build.

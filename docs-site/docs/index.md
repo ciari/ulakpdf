@@ -17,6 +17,13 @@ UlakPDF, dosyalarınızı sunucuya yüklemeden çalışan bir PDF araç koleksiy
 2. **[Arayüz Turu →](kullanim/arayuz.md)** — Üst çubuk, tema, çıkış
 3. **[PDF Araçları →](kullanim/araclar.md)** — Hangi araçlar var, ne yaparlar
 
+## Kaynak kod
+
+UlakPDF açık kaynaklıdır (AGPL-3.0). Kaynak koduna, yapılandırma dosyalarına
+ve kurulum rehberine GitHub üzerinden ulaşabilirsiniz:
+
+:material-github: **[github.com/ciari/ulakpdf](https://github.com/ciari/ulakpdf)**
+
 ## Yardım & destek
 
 Bir sorun yaşıyorsanız:

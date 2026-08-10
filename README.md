@@ -83,5 +83,5 @@ UlakPDF, açık kaynaklı bileşenler üzerine inşa edilmiştir:
 - Shibboleth SP — Apache 2.0
 - nginx, mkdocs-material, FastAPI — kendi lisansları
 
-Bizim eklediğimiz overlay/yapılandırma kodları için kurum lisans
-politikanıza göre `LICENSE` dosyası ekleyin.
+UlakPDF overlay/yapılandırma kodları AGPL-3.0 lisansı ile sunulmaktadır.
+Kaynak kod: <https://github.com/ciari/ulakpdf>
