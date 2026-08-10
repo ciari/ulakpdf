@@ -171,35 +171,38 @@ html.theme-light code {
    than id-based: the rendered HTML in current BentoPDF builds doesn't
    carry #nav-logo / #nav-brand ids. */
 
-/* Simple-mode navbar (default for our UlakPDF install). */
-nav[data-simple-nav] img {
+/* Simple-mode navbar (default for our UlakPDF install).
+   The logo PNG is a wide horizontal wordmark (~3.23:1 ratio); the stock
+   Tailwind h-8 w-8 squeezes it into a 32x32 square.  Override width to
+   auto so the image keeps its natural aspect ratio.  The brand text span
+   is hidden because the PNG already contains the wordmark.
+   Selectors cover both the stock layout (img + span) and the overlay's
+   runtime fix which wraps the img in an <a> (a + span). */
+nav[data-simple-nav] img,
+nav[data-simple-nav] a > img {
     height: 32px !important;
     width: auto !important;
     max-width: 200px !important;
 }
-/* Hide ONLY the wordmark span that sits right next to the logo image.
-   The previous .flex-shrink-0 > span selector was too broad and also
-   hid the language names inside the simple-mode footer's language
-   switcher (option buttons use `flex items-center gap-2` and have a
-   <span> with the language name). The `img + span` pattern only
-   matches a span that is the immediate sibling of an img — exactly the
-   logo+brand cluster. */
-nav[data-simple-nav] img + span {
+nav[data-simple-nav] img + span,
+nav[data-simple-nav] a + span {
     display: none !important;
 }
 
 /* Simple-mode footer logo block — same logo+text cluster. */
-footer[data-simple-footer] img {
+footer[data-simple-footer] img,
+footer[data-simple-footer] a > img {
     height: 32px !important;
     width: auto !important;
     max-width: 200px !important;
     margin-right: 0 !important;
 }
-footer[data-simple-footer] img + span {
+footer[data-simple-footer] img + span,
+footer[data-simple-footer] a + span {
     display: none !important;
 }
 
-/* Belt-and-suspenders for older/full navbars that still ship #nav-logo. */
+/* Belt-and-suspenders for navbars that ship #nav-logo / #nav-brand. */
 #nav-logo {
     height: 32px !important;
     width: auto !important;

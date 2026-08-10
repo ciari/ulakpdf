@@ -183,12 +183,37 @@
         document.body.appendChild(btn);
     }
 
+    function fixLogo() {
+        var nav = document.querySelector('nav[data-simple-nav], nav');
+        if (!nav) return;
+        var img = nav.querySelector('#nav-logo, .flex-shrink-0 img');
+        if (!img) return;
+
+        // Already wrapped — don't double-wrap.
+        if (img.parentElement && img.parentElement.tagName === 'A') return;
+
+        var link = document.createElement('a');
+        link.href = '/';
+        link.style.display = 'inline-flex';
+        link.style.alignItems = 'center';
+        img.parentElement.insertBefore(link, img);
+        link.appendChild(img);
+
+        // Hide the brand text span (the <a> inside it is the only home link
+        // in stock BentoPDF, but our logo PNG already contains the wordmark).
+        var brand = nav.querySelector('#nav-brand') || link.nextElementSibling;
+        if (brand && brand.tagName === 'SPAN') {
+            brand.style.display = 'none';
+        }
+    }
+
     function init() {
         // Re-apply once more in case the early script didn't run (paranoid).
         // Default to light: BentoPDF originally defaulted dark, but UlakPDF's
         // brand palette and most institutional usage works better in light.
         // Users can toggle and the choice persists in localStorage.
         applyTheme(readPref() || 'light');
+        fixLogo();
         var btn = buildButton();
         var menu = buildUserMenu();
         placeButton(btn, menu);
