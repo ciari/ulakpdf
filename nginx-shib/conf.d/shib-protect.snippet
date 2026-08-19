@@ -30,8 +30,8 @@ proxy_set_header X-Forwarded-Port  $public_port;
 # Strip any client-supplied auth headers — only the values shibd vouches for
 # should reach the backend.
 proxy_set_header Authorization     "";
-proxy_set_header X-Remote-User     $shib_eppn;
-proxy_set_header X-Remote-Mail     $shib_mail;
+proxy_set_header X-Remote-User     $shib_eppn_primary;
+proxy_set_header X-Remote-Mail     $shib_mail_primary;
 proxy_set_header X-Remote-Name     $shib_displayname;
 proxy_set_header X-Remote-Given    $shib_givenname;
 proxy_set_header X-Remote-Surname  $shib_sn;

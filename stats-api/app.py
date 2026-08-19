@@ -133,7 +133,7 @@ def _ingest_line(c: sqlite3.Connection, line: str) -> None:
     # mode) don't release eduPersonPrincipalName. Treat `mail` as the user
     # identifier when `eppn` is empty. With Yetkim federation IdPs that DO
     # release eppn, the fallback never fires and behavior is unchanged.
-    eppn = (rec.get("eppn") or rec.get("mail") or "").strip().lower() or None
+    eppn = _first_value(rec.get("eppn")) or _first_value(rec.get("mail")) or None
     inst = _institution(eppn)
     ts = rec.get("ts") or ""
     day = ts[:10] if len(ts) >= 10 else ""
@@ -225,10 +225,15 @@ def _date_range(days: int) -> tuple[str, str]:
 # ---- Admin gate: every /api/* endpoint requires X-Remote-User ∈ ADMIN_EPPNS.
 #      X-Remote-User is set by nginx after Shibboleth auth — we trust it.
 
+def _first_value(raw: str | None) -> str:
+    """Extract the first value from a semicolon-delimited multi-value attribute."""
+    if not raw:
+        return ""
+    return raw.split(";")[0].strip().lower()
+
+
 def _user_id(x_remote_user: str | None, x_remote_mail: str | None) -> str:
-    # Same fallback as the ingest loop: prefer eppn, fall back to mail for
-    # IdPs that don't release eduPersonPrincipalName.
-    return (x_remote_user or x_remote_mail or "").strip().lower()
+    return _first_value(x_remote_user) or _first_value(x_remote_mail)
 
 
 def require_user(
