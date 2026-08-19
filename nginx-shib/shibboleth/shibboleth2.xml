@@ -101,11 +101,10 @@
 
         <AttributeExtractor type="XML" validate="true" reloadChanges="false"
                             path="attribute-map.xml"/>
-        <!-- AttributeResolver type="Query" removed: modern federation IdPs
-             push attributes in the SAML assertion itself. The back-channel
-             SOAP Attribute Query was failing for some IdPs (Marmara) whose
-             AA endpoint returns a Responder error, causing all attributes
-             to be lost even though authentication succeeded. -->
+        <!-- Some IdPs (e.g. Marmara) only release attributes via back-channel
+             Attribute Query, not in the SAML assertion. The Query is kept but
+             its failure is non-fatal — sessions are created either way. -->
+        <AttributeResolver type="Query" subjectMatch="true"/>
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
 
         <CredentialResolver type="File" use="signing"
