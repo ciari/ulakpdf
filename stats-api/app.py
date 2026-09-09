@@ -273,7 +273,11 @@ def _consent_secret() -> bytes:
     if _SECRET_PATH.exists():
         return _SECRET_PATH.read_bytes()
     key = secrets.token_bytes(32)
-    _SECRET_PATH.write_bytes(key)
+    fd = os.open(str(_SECRET_PATH), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        os.write(fd, key)
+    finally:
+        os.close(fd)
     return key
 
 
@@ -286,7 +290,7 @@ def _verify_consent_cookie(cookie_val: str | None, user_id: str) -> bool:
     if not cookie_val or ":" not in cookie_val:
         return False
     version = cookie_val.split(":")[0]
-    return cookie_val == _sign_consent(user_id, version) and version == CONSENT_VERSION
+    return hmac.compare_digest(cookie_val, _sign_consent(user_id, version)) and version == CONSENT_VERSION
 
 
 # /api/healthz is intentionally unguarded so the docker healthcheck works.
