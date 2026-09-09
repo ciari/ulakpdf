@@ -14,8 +14,11 @@ Trust model:
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
+import secrets
 import sqlite3
 import threading
 import time
@@ -248,9 +251,10 @@ def require_user(
 
 def require_admin(
     x_remote_user: str | None = Header(default=None),
-    x_remote_mail: str | None = Header(default=None),
 ) -> str:
-    user = require_user(x_remote_user, x_remote_mail)
+    user = _first_value(x_remote_user)
+    if not user:
+        raise HTTPException(403, "admin access requires eppn (X-Remote-User)")
     if not ADMIN_EPPNS or user not in ADMIN_EPPNS:
         raise HTTPException(403, f"{user} is not an admin")
     return user
@@ -262,6 +266,28 @@ def require_admin(
 CONSENT_VERSION = "v2"
 CONSENT_COOKIE_MAX_AGE = 365 * 24 * 3600   # 1 year
 
+_SECRET_PATH = Path(os.environ.get("CONSENT_SECRET_PATH", "/data/consent-secret.key"))
+
+
+def _consent_secret() -> bytes:
+    if _SECRET_PATH.exists():
+        return _SECRET_PATH.read_bytes()
+    key = secrets.token_bytes(32)
+    _SECRET_PATH.write_bytes(key)
+    return key
+
+
+def _sign_consent(user_id: str, version: str) -> str:
+    sig = hmac.new(_consent_secret(), f"{version}:{user_id}".encode(), hashlib.sha256).hexdigest()[:16]
+    return f"{version}:{sig}"
+
+
+def _verify_consent_cookie(cookie_val: str | None, user_id: str) -> bool:
+    if not cookie_val or ":" not in cookie_val:
+        return False
+    version = cookie_val.split(":")[0]
+    return cookie_val == _sign_consent(user_id, version) and version == CONSENT_VERSION
+
 
 # /api/healthz is intentionally unguarded so the docker healthcheck works.
 # Everything else requires admin via Depends(require_admin).
@@ -269,6 +295,28 @@ CONSENT_COOKIE_MAX_AGE = 365 * 24 * 3600   # 1 year
 @app.get("/api/healthz")
 def health():
     return {"ok": True, "log_exists": LOG_PATH.exists(), "admin_count": len(ADMIN_EPPNS)}
+
+
+@app.get("/_internal/check-consent")
+def check_consent(
+    request: Request,
+    x_remote_user: str | None = Header(default=None),
+    x_remote_mail: str | None = Header(default=None),
+):
+    """nginx auth_request subrequest — returns 200 if consent is valid, 403 if not."""
+    user = _user_id(x_remote_user, x_remote_mail)
+    if not user:
+        raise HTTPException(403, "no user")
+    cookie_val = request.cookies.get("spdf-consent")
+    if _verify_consent_cookie(cookie_val, user):
+        return PlainTextResponse("ok")
+    with db() as c:
+        row = c.execute(
+            "SELECT version FROM consents WHERE user_id = ?", (user,)
+        ).fetchone()
+    if row and row["version"] == CONSENT_VERSION:
+        return PlainTextResponse("ok")
+    raise HTTPException(403, "consent required")
 
 
 # ---- KVKK consent ----
@@ -304,15 +352,16 @@ def accept_consent(
                 (request.headers.get("user-agent") or "")[:500],
             ),
         )
+    signed = _sign_consent(user, CONSENT_VERSION)
     resp = JSONResponse({"ok": True, "version": CONSENT_VERSION, "accepted_at": now})
     resp.set_cookie(
         "spdf-consent",
-        CONSENT_VERSION,
+        signed,
         max_age=CONSENT_COOKIE_MAX_AGE,
         path="/",
-        httponly=False,        # JS can read it; non-sensitive
+        httponly=False,
         samesite="lax",
-        secure=False,          # nginx terminates TLS — TLS cookie set by host nginx if needed
+        secure=False,
     )
     return resp
 

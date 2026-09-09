@@ -2,23 +2,26 @@
     xmlns="urn:mace:shibboleth:2.0:afp"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <!-- Permissive policy intended for the bundled SimpleSAMLphp test IdP.
-         It sends eppn / affiliation as plain SAML 2.0 basic-name-format
-         attributes WITHOUT a separate `scope` attribute, so the default
-         Debian policy (ScopingRules requires scope element + value without
-         '@') would strip them.
-
-         For a real federation, replace this with a stricter policy and rely
-         on the IdP releasing properly-scoped attributes. -->
+    <!-- Production policy for Yetkim federation.
+         Scoped attributes (eppn, scoped-affiliation) are validated against
+         the IdP's <shibmd:Scope> elements in federation metadata — prevents
+         cross-IdP identity spoofing.
+         Unscoped attributes (mail, displayName, etc.) use ANY. -->
 
     <AttributeFilterPolicy>
         <PolicyRequirementRule xsi:type="ANY"/>
 
         <AttributeRule attributeID="eppn">
-            <PermitValueRule xsi:type="ANY"/>
+            <PermitValueRule xsi:type="ScopeMatchesShibMDScope"/>
         </AttributeRule>
         <AttributeRule attributeID="affiliation">
-            <PermitValueRule xsi:type="ANY"/>
+            <PermitValueRule xsi:type="ScopeMatchesShibMDScope"/>
+        </AttributeRule>
+        <AttributeRule attributeID="subject-id">
+            <PermitValueRule xsi:type="ScopeMatchesShibMDScope"/>
+        </AttributeRule>
+        <AttributeRule attributeID="pairwise-id">
+            <PermitValueRule xsi:type="ScopeMatchesShibMDScope"/>
         </AttributeRule>
         <AttributeRule attributeID="mail">
             <PermitValueRule xsi:type="ANY"/>
@@ -38,10 +41,7 @@
         <AttributeRule attributeID="uid">
             <PermitValueRule xsi:type="ANY"/>
         </AttributeRule>
-        <AttributeRule attributeID="subject-id">
-            <PermitValueRule xsi:type="ANY"/>
-        </AttributeRule>
-        <AttributeRule attributeID="pairwise-id">
+        <AttributeRule attributeID="persistent-id">
             <PermitValueRule xsi:type="ANY"/>
         </AttributeRule>
     </AttributeFilterPolicy>
