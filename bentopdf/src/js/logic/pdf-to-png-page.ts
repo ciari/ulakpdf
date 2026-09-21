@@ -87,10 +87,8 @@ const resetState = () => {
   files = [];
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
   if (fileInput) fileInput.value = '';
-  const scaleSlider = document.getElementById('png-scale') as HTMLInputElement;
-  const scaleValue = document.getElementById('png-scale-value');
-  if (scaleSlider) scaleSlider.value = '2.0';
-  if (scaleValue) scaleValue.textContent = '2.0x';
+  const dpiSelect = document.getElementById('png-dpi') as HTMLSelectElement;
+  if (dpiSelect) dpiSelect.value = '150';
   updateUI();
 };
 
@@ -108,18 +106,19 @@ async function convert() {
     showLoader(t('tools:pdfToPng.loader.converting'));
     const { pdf } = result;
 
-    const scaleInput = document.getElementById('png-scale') as HTMLInputElement;
-    const scale = scaleInput ? parseFloat(scaleInput.value) : 2.0;
+    const dpiInput = document.getElementById('png-dpi') as HTMLSelectElement;
+    const dpi = dpiInput ? parseInt(dpiInput.value, 10) : 150;
+    const scale = dpi / 72;
 
     if (pdf.numPages === 1) {
       const page = await pdf.getPage(1);
-      const blob = await renderPage(page, scale);
+      const blob = await renderPage(page, scale, dpi);
       downloadFile(blob, getCleanPdfFilename(files[0].name) + '.png');
     } else {
       const zip = new JSZip();
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const blob = await renderPage(page, scale);
+        const blob = await renderPage(page, scale, dpi);
         if (blob) {
           zip.file(`page_${i}.png`, blob);
         }
@@ -145,9 +144,47 @@ async function convert() {
   }
 }
 
+function insertPhysChunk(buf: ArrayBuffer, dpi: number): ArrayBuffer {
+  const src = new Uint8Array(buf);
+  // PNG pHYs chunk: pixels per meter = dpi * 39.3701
+  const ppm = Math.round(dpi * 39.3701);
+  // pHYs chunk: length(4) + "pHYs"(4) + Xppm(4) + Yppm(4) + unit(1) + CRC(4) = 21 bytes
+  const chunk = new Uint8Array(21);
+  const view = new DataView(chunk.buffer);
+  view.setUint32(0, 9); // data length: 9 bytes
+  chunk[4] = 0x70; chunk[5] = 0x48; chunk[6] = 0x59; chunk[7] = 0x73; // "pHYs"
+  view.setUint32(8, ppm);  // X pixels per unit
+  view.setUint32(12, ppm); // Y pixels per unit
+  chunk[16] = 1; // unit = meter
+  // CRC over type + data
+  const crc = crc32(chunk.subarray(4, 17));
+  view.setUint32(17, crc);
+
+  // Insert after IHDR chunk (PNG signature 8 bytes + IHDR chunk)
+  // IHDR chunk starts at byte 8, its total length = 4(len) + 4(type) + 13(data) + 4(crc) = 25
+  const insertPos = 8 + 25;
+  const result = new Uint8Array(src.length + 21);
+  result.set(src.subarray(0, insertPos), 0);
+  result.set(chunk, insertPos);
+  result.set(src.subarray(insertPos), insertPos + 21);
+  return result.buffer;
+}
+
+function crc32(data: Uint8Array): number {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+    }
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
 async function renderPage(
   page: PDFPageProxy,
-  scale: number
+  scale: number,
+  dpi: number
 ): Promise<Blob | null> {
   const viewport = page.getViewport({ scale });
   const canvas = document.createElement('canvas');
@@ -164,7 +201,9 @@ async function renderPage(
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/png')
   );
-  return blob;
+  if (!blob) return null;
+  const buf = insertPhysChunk(await blob.arrayBuffer(), dpi);
+  return new Blob([buf], { type: 'image/png' });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -172,18 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone');
   const processBtn = document.getElementById('process-btn');
   const backBtn = document.getElementById('back-to-tools');
-  const scaleSlider = document.getElementById('png-scale') as HTMLInputElement;
-  const scaleValue = document.getElementById('png-scale-value');
-
   if (backBtn) {
     backBtn.addEventListener('click', () => {
       window.location.href = import.meta.env.BASE_URL;
-    });
-  }
-
-  if (scaleSlider && scaleValue) {
-    scaleSlider.addEventListener('input', () => {
-      scaleValue.textContent = `${parseFloat(scaleSlider.value).toFixed(1)}x`;
     });
   }
 

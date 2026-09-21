@@ -149,11 +149,33 @@ async function convert() {
   }
 }
 
+function patchJfifDpi(buf: ArrayBuffer, dpi: number): ArrayBuffer {
+  const data = new Uint8Array(buf);
+  // JFIF APP0 marker: FF E0, length(2), "JFIF\0", version(2), units(1), Xdensity(2), Ydensity(2)
+  // Search for JFIF header within first 20 bytes
+  for (let i = 0; i < Math.min(data.length - 14, 20); i++) {
+    if (data[i] === 0x4A && data[i+1] === 0x46 && data[i+2] === 0x49 && data[i+3] === 0x46 && data[i+4] === 0x00) {
+      // Found "JFIF\0" at offset i
+      const offset = i + 7; // units byte is 7 bytes after 'J'
+      data[offset] = 1; // units = 1 (dots per inch)
+      data[offset + 1] = (dpi >> 8) & 0xFF; // X density high byte
+      data[offset + 2] = dpi & 0xFF;        // X density low byte
+      data[offset + 3] = (dpi >> 8) & 0xFF; // Y density high byte
+      data[offset + 4] = dpi & 0xFF;        // Y density low byte
+      break;
+    }
+  }
+  return buf;
+}
+
 async function renderPage(
   page: PDFPageProxy,
   quality: number
 ): Promise<Blob | null> {
-  const viewport = page.getViewport({ scale: 2.0 });
+  const dpiInput = document.getElementById('jpg-dpi') as HTMLSelectElement;
+  const dpi = dpiInput ? parseInt(dpiInput.value, 10) : 150;
+  const scale = dpi / 72;
+  const viewport = page.getViewport({ scale });
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = viewport.height;
@@ -168,7 +190,9 @@ async function renderPage(
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/jpeg', quality)
   );
-  return blob;
+  if (!blob) return null;
+  const buf = patchJfifDpi(await blob.arrayBuffer(), dpi);
+  return new Blob([buf], { type: 'image/jpeg' });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

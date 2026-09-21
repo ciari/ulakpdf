@@ -160,32 +160,21 @@
         <div id="options-panel" class="hidden mt-6">
           <div class="mb-4">
             <label
-              for="png-scale"
+              for="png-dpi"
               class="block mb-2 text-sm font-medium text-gray-300"
-              data-i18n="tools:pdfToPng.imageScale"
-              >Image Scale</label
+              >Resolution (DPI)</label
             >
-            <div class="flex items-center gap-4">
-              <input
-                type="range"
-                id="png-scale"
-                min="1.0"
-                max="3.0"
-                step="0.1"
-                value="2.0"
-                class="flex-1"
-              />
-              <span
-                id="png-scale-value"
-                class="text-white font-medium w-16 text-right"
-                >2.0x</span
-              >
-            </div>
-            <p
-              class="mt-1 text-xs text-gray-400"
-              data-i18n="tools:pdfToPng.imageScaleExplanation"
+            <select
+              id="png-dpi"
+              class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
             >
-              Higher scale = better quality but larger file size
+              <option value="72">72 DPI — Screen / Preview</option>
+              <option value="150" selected>150 DPI — Standard</option>
+              <option value="300">300 DPI — Print / Academic</option>
+              <option value="600">600 DPI — High Quality Print</option>
+            </select>
+            <p class="mt-1 text-xs text-gray-400">
+              Academic journals typically require 300 DPI or higher
             </p>
           </div>
 

@@ -163,6 +163,25 @@
         <div id="options-panel" class="hidden mt-6">
           <div class="mb-4">
             <label
+              for="jpg-dpi"
+              class="block mb-2 text-sm font-medium text-gray-300"
+              >Resolution (DPI)</label
+            >
+            <select
+              id="jpg-dpi"
+              class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="72">72 DPI — Screen / Preview</option>
+              <option value="150" selected>150 DPI — Standard</option>
+              <option value="300">300 DPI — Print / Academic</option>
+              <option value="600">600 DPI — High Quality Print</option>
+            </select>
+            <p class="mt-1 text-xs text-gray-400">
+              Academic journals typically require 300 DPI or higher
+            </p>
+          </div>
+          <div class="mb-4">
+            <label
               for="jpg-quality"
               class="block mb-2 text-sm font-medium text-gray-300"
               data-i18n="tools:pdfToJpg.imageQuality"
